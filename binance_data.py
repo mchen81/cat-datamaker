@@ -12,11 +12,12 @@ class BinanceDataFetcher:
     def __init__(self):
         self.base_url = "https://api.binance.com/api/v3"
         
-    async def get_btc_klines(self, interval: str = "1h", limit: int = 100) -> List[List[str]]:
+    async def get_klines(self, symbol: str = "BTCUSDT", interval: str = "1h", limit: int = 100) -> List[List[str]]:
         """
-        Fetch BTC kline/candlestick data from Binance
+        Fetch kline/candlestick data from Binance
         
         Args:
+            symbol: Trading pair symbol (e.g., BTCUSDT, ETHUSDT)
             interval: Kline interval (1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M)
             limit: Number of klines to fetch (max 1000)
             
@@ -25,7 +26,7 @@ class BinanceDataFetcher:
         """
         url = f"{self.base_url}/klines"
         params = {
-            "symbol": "BTCUSDT",
+            "symbol": symbol,
             "interval": interval,
             "limit": limit
         }

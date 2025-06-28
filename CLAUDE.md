@@ -50,7 +50,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 3. `TechnicalAnalyzer` processes data and calculates indicators (RSI, MACD, Bollinger Bands)
 4. API returns formatted response with raw data and calculated indicators
 
-## Used Third Party Libraries
+## Use Context7 when using Third-Party Libraries
 Here are the third party libraries available for technical analysis. Make sure you use context7 when writing code from them:
 - **smartmoneyconcepts** (https://github.com/joshyattridge/smart-money-concepts) - Smart Money Concepts indicators
 - **stockstats** - Stock statistics and technical analysis

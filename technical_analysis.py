@@ -1,11 +1,11 @@
 import pandas as pd
+import pandas_ta as ta
 from typing import Dict, Any, List
-from smartmoneyconcepts import smc
 
 
 class TechnicalAnalyzer:
     """
-    Performs technical analysis using smartmoneyconcepts library
+    Performs technical analysis using pandas-ta library
     """
     
     def __init__(self):
@@ -28,7 +28,7 @@ class TechnicalAnalyzer:
     
     def calculate_rsi(self, df: pd.DataFrame, period: int = 14) -> List[float]:
         """
-        Calculate RSI using smartmoneyconcepts
+        Calculate RSI using pandas-ta
         
         Args:
             df: DataFrame with OHLCV data
@@ -37,12 +37,12 @@ class TechnicalAnalyzer:
         Returns:
             RSI values
         """
-        rsi = smc.rsi(df['close'], period)
-        return rsi.tolist()
+        rsi = ta.rsi(df['close'], length=period)
+        return rsi.dropna().tolist()
     
     def calculate_macd(self, df: pd.DataFrame, fast: int = 12, slow: int = 26, signal: int = 9) -> Dict[str, List[float]]:
         """
-        Calculate MACD using smartmoneyconcepts
+        Calculate MACD using pandas-ta
         
         Args:
             df: DataFrame with OHLCV data
@@ -53,17 +53,17 @@ class TechnicalAnalyzer:
         Returns:
             Dictionary with MACD line, signal line, and histogram
         """
-        macd_line, macd_signal, macd_histogram = smc.macd(df['close'], fast, slow, signal)
+        macd_data = ta.macd(df['close'], fast=fast, slow=slow, signal=signal)
         
         return {
-            "macd_line": macd_line.tolist(),
-            "signal_line": macd_signal.tolist(),
-            "histogram": macd_histogram.tolist()
+            "macd_line": macd_data[f'MACD_{fast}_{slow}_{signal}'].dropna().tolist(),
+            "signal_line": macd_data[f'MACDs_{fast}_{slow}_{signal}'].dropna().tolist(),
+            "histogram": macd_data[f'MACDh_{fast}_{slow}_{signal}'].dropna().tolist()
         }
     
     def calculate_bollinger_bands(self, df: pd.DataFrame, period: int = 20, std: int = 2) -> Dict[str, List[float]]:
         """
-        Calculate Bollinger Bands using smartmoneyconcepts
+        Calculate Bollinger Bands using pandas-ta
         
         Args:
             df: DataFrame with OHLCV data
@@ -73,12 +73,12 @@ class TechnicalAnalyzer:
         Returns:
             Dictionary with upper, middle, and lower bands
         """
-        upper, middle, lower = smc.bollinger_bands(df['close'], period, std)
+        bb_data = ta.bbands(df['close'], length=period, std=std)
         
         return {
-            "upper_band": upper.tolist(),
-            "middle_band": middle.tolist(),
-            "lower_band": lower.tolist()
+            "upper_band": bb_data[f'BBU_{period}_{std}.0'].dropna().tolist(),
+            "middle_band": bb_data[f'BBM_{period}_{std}.0'].dropna().tolist(),
+            "lower_band": bb_data[f'BBL_{period}_{std}.0'].dropna().tolist()
         }
     
     def analyze_all_indicators(self, ohlcv_data: Dict[str, List[float]]) -> Dict[str, Any]:
