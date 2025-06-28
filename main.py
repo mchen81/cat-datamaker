@@ -107,7 +107,7 @@ async def root():
 
 
 @app.post("/v1/analyze",
-          response_model=AnalyzeResponse,
+          # response_model=AnalyzeResponse,
           summary="Analyze Cryptocurrency",
           description="Fetch cryptocurrency data from Binance and perform comprehensive technical analysis including traditional indicators and Smart Money Concepts",
           response_description="Complete analysis results with technical and SMC indicators")

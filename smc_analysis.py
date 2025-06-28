@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 from typing import Dict, Any, List
 
@@ -49,7 +50,16 @@ class SMCAnalyzer:
         if isinstance(obj, np.integer):
             return int(obj)
         elif isinstance(obj, np.floating):
-            return float(obj)
+            val = float(obj)
+            # Handle special float values that are not JSON compliant
+            if math.isnan(val) or math.isinf(val):
+                return None
+            return val
+        elif isinstance(obj, (int, float)):
+            # Handle Python native float types that might be inf or nan
+            if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+                return None
+            return obj
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
         elif isinstance(obj, dict):
@@ -72,6 +82,15 @@ class SMCAnalyzer:
             Pandas DataFrame with proper datetime index and required columns
         """
         df = pd.DataFrame(ohlcv_data)
+
+        # Filter out invalid timestamps (too small, likely corrupted data)
+        # Valid Binance timestamps should be > 1000000000000 (Sep 2001 in ms)
+        valid_timestamp_mask = df['timestamp'] > 1000000000000
+        df = df[valid_timestamp_mask]
+
+        if df.empty:
+            raise ValueError("No valid timestamp data found")
+        
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
         df.set_index('timestamp', inplace=True)
 
@@ -102,7 +121,7 @@ class SMCAnalyzer:
         if not fvg.empty:
             for idx, row in fvg.iterrows():
                 gap_info = {
-                    "timestamp": self._format_timestamp(idx),
+                    "timestamp": self._format_timestamp(df.index[idx] if isinstance(idx, int) else idx),
                     "top": self._convert_numpy_types(row.get('Top', 0)),
                     "bottom": self._convert_numpy_types(row.get('Bottom', 0)),
                     "direction": self._convert_numpy_types(row.get('FVG', 0)),
@@ -139,12 +158,12 @@ class SMCAnalyzer:
             for idx, row in swing_result.iterrows():
                 if row.get('HighLow', 0) == 1:  # Swing High
                     swing_data["swing_highs"].append({
-                        "timestamp": self._format_timestamp(idx),
+                        "timestamp": self._format_timestamp(df.index[idx] if isinstance(idx, int) else idx),
                         "price": self._convert_numpy_types(row.get('Level', 0))
                     })
                 elif row.get('HighLow', 0) == -1:  # Swing Low
                     swing_data["swing_lows"].append({
-                        "timestamp": self._format_timestamp(idx),
+                        "timestamp": self._format_timestamp(df.index[idx] if isinstance(idx, int) else idx),
                         "price": self._convert_numpy_types(row.get('Level', 0))
                     })
 
@@ -173,7 +192,7 @@ class SMCAnalyzer:
         if not bos_choch.empty:
             for idx, row in bos_choch.iterrows():
                 structure_info = {
-                    "timestamp": self._format_timestamp(idx),
+                    "timestamp": self._format_timestamp(df.index[idx] if isinstance(idx, int) else idx),
                     "level": self._convert_numpy_types(row.get('Level', 0)),
                     "broken_index": row.get('BrokenIndex', 0)
                 }
@@ -208,12 +227,12 @@ class SMCAnalyzer:
         if not ob.empty:
             for idx, row in ob.iterrows():
                 ob_info = {
-                    "timestamp": self._format_timestamp(idx),
-                    "top": float(row.get('Top', 0)),
-                    "bottom": float(row.get('Bottom', 0)),
+                    "timestamp": self._format_timestamp(df.index[idx] if isinstance(idx, int) else idx),
+                    "top": self._convert_numpy_types(row.get('Top', 0)),
+                    "bottom": self._convert_numpy_types(row.get('Bottom', 0)),
                     "direction": row.get('OB', 0),
-                    "volume": float(row.get('OBVolume', 0)),
-                    "percentage": float(row.get('Percentage', 0))
+                    "volume": self._convert_numpy_types(row.get('OBVolume', 0)),
+                    "percentage": self._convert_numpy_types(row.get('Percentage', 0))
                 }
 
                 if row.get('OB', 0) == 1:  # Bullish OB
@@ -245,7 +264,7 @@ class SMCAnalyzer:
         if not liquidity.empty:
             for idx, row in liquidity.iterrows():
                 liq_info = {
-                    "timestamp": self._format_timestamp(idx),
+                    "timestamp": self._format_timestamp(df.index[idx] if isinstance(idx, int) else idx),
                     "level": self._convert_numpy_types(row.get('Level', 0)),
                     "end": row.get('End', None),
                     "swept": bool(row.get('Swept', False)),
@@ -280,26 +299,26 @@ class SMCAnalyzer:
             for idx, row in prev_high_low.iterrows():
                 if not pd.isna(row.get('PreviousHigh', None)):
                     phl_data["previous_highs"].append({
-                        "timestamp": self._format_timestamp(idx),
-                        "level": float(row.get('PreviousHigh', 0))
+                        "timestamp": self._format_timestamp(df.index[idx] if isinstance(idx, int) else idx),
+                        "level": self._convert_numpy_types(row.get('PreviousHigh', 0))
                     })
 
                 if not pd.isna(row.get('PreviousLow', None)):
                     phl_data["previous_lows"].append({
-                        "timestamp": self._format_timestamp(idx),
-                        "level": float(row.get('PreviousLow', 0))
+                        "timestamp": self._format_timestamp(df.index[idx] if isinstance(idx, int) else idx),
+                        "level": self._convert_numpy_types(row.get('PreviousLow', 0))
                     })
 
                 if row.get('BrokenHigh', 0) == 1:
                     phl_data["broken_highs"].append({
-                        "timestamp": self._format_timestamp(idx),
-                        "level": float(row.get('PreviousHigh', 0))
+                        "timestamp": self._format_timestamp(df.index[idx] if isinstance(idx, int) else idx),
+                        "level": self._convert_numpy_types(row.get('PreviousHigh', 0))
                     })
 
                 if row.get('BrokenLow', 0) == 1:
                     phl_data["broken_lows"].append({
-                        "timestamp": self._format_timestamp(idx),
-                        "level": float(row.get('PreviousLow', 0))
+                        "timestamp": self._format_timestamp(df.index[idx] if isinstance(idx, int) else idx),
+                        "level": self._convert_numpy_types(row.get('PreviousLow', 0))
                     })
 
         return phl_data
