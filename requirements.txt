@@ -6,3 +6,5 @@ smartmoneyconcepts==0.0.26
 stockstats==0.6.5
 pandas-ta==0.3.14b0
 pydantic==2.5.2
+python-multipart==0.0.6
+certifi==2024.8.30

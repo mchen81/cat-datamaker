@@ -1,17 +1,23 @@
+import ssl
+from typing import List, Dict
+
 import aiohttp
-import asyncio
-from typing import List, Dict, Any
-from datetime import datetime
+import certifi
 
 
 class BinanceDataFetcher:
     """
     Fetches BTC data from Binance API
     """
-    
+
     def __init__(self):
         self.base_url = "https://api.binance.com/api/v3"
-        
+
+        # Create SSL context for secure connections
+        self.ssl_context = ssl.create_default_context(cafile=certifi.where())
+        self.ssl_context.check_hostname = False
+        self.ssl_context.verify_mode = ssl.CERT_NONE
+
     async def get_klines(self, symbol: str = "BTCUSDT", interval: str = "1h", limit: int = 100) -> List[List[str]]:
         """
         Fetch kline/candlestick data from Binance
@@ -30,14 +36,18 @@ class BinanceDataFetcher:
             "interval": interval,
             "limit": limit
         }
-        
-        async with aiohttp.ClientSession() as session:
+
+        # Create connector with SSL context
+        connector = aiohttp.TCPConnector(ssl=self.ssl_context)
+        timeout = aiohttp.ClientTimeout(total=30)
+
+        async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
             async with session.get(url, params=params) as response:
                 if response.status == 200:
                     return await response.json()
                 else:
-                    raise Exception(f"Failed to fetch data: {response.status}")
-    
+                    raise Exception(f"Failed to fetch data: {response.status} - {await response.text()}")
+
     def format_klines_data(self, klines: List[List[str]]) -> Dict[str, List[float]]:
         """
         Format klines data into OHLCV structure
@@ -56,7 +66,7 @@ class BinanceDataFetcher:
             "volume": [],
             "timestamp": []
         }
-        
+
         for kline in klines:
             formatted_data["timestamp"].append(int(kline[0]))
             formatted_data["open"].append(float(kline[1]))
@@ -64,5 +74,5 @@ class BinanceDataFetcher:
             formatted_data["low"].append(float(kline[3]))
             formatted_data["close"].append(float(kline[4]))
             formatted_data["volume"].append(float(kline[5]))
-            
+
         return formatted_data
