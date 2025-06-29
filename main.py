@@ -1,12 +1,29 @@
+import os
 from datetime import datetime, timezone
 from typing import Dict, Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 
 from binance_data import BinanceDataFetcher
 from smc_analysis import SMCAnalyzer
 from technical_analysis import TechnicalAnalyzer
+
+# Get API key from environment variable
+API_KEY = os.getenv("API_KEY", "")
+
+# Define API key security scheme for Swagger
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+def verify_api_key(api_key: str = Depends(api_key_header)):
+    """Verify API key for protected endpoints"""
+    if not API_KEY:
+        raise HTTPException(status_code=500, detail="API key not configured")
+    if api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return True
 
 app = FastAPI(
     title="Cryptocurrency Technical Analysis API",
@@ -14,7 +31,7 @@ app = FastAPI(
     version="1.0.0",
     contact={
         "name": "DataMaker API",
-        "url": "https://github.com/your-repo/DataMaker",
+        "url": "https://github.com/mchen81/cat-datamaker",
     },
     license_info={
         "name": "MIT",
@@ -111,7 +128,7 @@ async def root():
           summary="Analyze Cryptocurrency",
           description="Fetch cryptocurrency data from Binance and perform comprehensive technical analysis including traditional indicators and Smart Money Concepts",
           response_description="Complete analysis results with technical and SMC indicators")
-async def analyze_crypto(request: AnalyzeRequest):
+async def analyze_crypto(request: AnalyzeRequest, _: bool = Depends(verify_api_key)):
     """
     Analyze cryptocurrency data with comprehensive technical indicators.
     
