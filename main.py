@@ -1,10 +1,10 @@
 import os
 from datetime import datetime, timezone
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import APIKeyHeader
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from binance_data import BinanceDataFetcher
 from smc_analysis import SMCAnalyzer
@@ -47,11 +47,36 @@ class AnalyzeRequest(BaseModel):
         min_length=2,
         max_length=20
     )
+    interval: Optional[str] = Field(
+        "1h",
+        description="Kline interval (1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M)",
+        example="1h"
+    )
+    limit: Optional[int] = Field(
+        90,
+        description="Number of klines to fetch (max 1000)",
+        example=90,
+        ge=1,
+        le=1000
+    )
+
+    @field_validator('interval')
+    @classmethod
+    def validate_interval(cls, v):
+        valid_intervals = {
+            '1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
+            '6h', '8h', '12h', '1d', '3d', '1w', '1M'
+        }
+        if v not in valid_intervals:
+            raise ValueError(f'Invalid interval. Must be one of: {", ".join(sorted(valid_intervals))}')
+        return v
 
     class Config:
         json_schema_extra = {
             "example": {
-                "symbol": "BTC"
+                "symbol": "BTC",
+                "interval": "1h",
+                "limit": 90
             }
         }
 
@@ -133,12 +158,16 @@ async def analyze_crypto(request: AnalyzeRequest, _: bool = Depends(verify_api_k
     Analyze cryptocurrency data with comprehensive technical indicators.
     
     This endpoint:
-    1. Fetches the latest 90 1-hour candles from Binance for the specified symbol
+    1. Fetches klines data from Binance for the specified symbol, interval, and limit
     2. Calculates traditional technical indicators (RSI, MACD, Bollinger Bands)
     3. Performs Smart Money Concepts analysis (Fair Value Gaps, Order Blocks, Liquidity, etc.)
     4. Returns all data and calculated indicators
     
-    **Supported symbols:** Any valid Binance trading pair (e.g., BTC, ETH, ADA, etc.)
+    **Parameters:**
+    - **symbol**: Any valid Binance trading pair (e.g., BTC, ETH, ADA, etc.)
+    - **interval**: Optional kline interval (default: 1h) - Valid values: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M
+    - **limit**: Optional number of klines to fetch (default: 90, max: 1000)
+    
     **Note:** If the symbol doesn't end with 'USDT', it will be automatically appended.
     """
     try:
@@ -147,12 +176,16 @@ async def analyze_crypto(request: AnalyzeRequest, _: bool = Depends(verify_api_k
         technical_analyzer = TechnicalAnalyzer()
         smc_analyzer = SMCAnalyzer()
 
-        # Fetch data from Binance (90 klines, 1 hour timeframe)
+        # Fetch data from Binance using request parameters
         symbol = request.symbol.upper()
         if not symbol.endswith('USDT'):
             symbol = f"{symbol}USDT"
 
-        klines_data = await binance_fetcher.get_klines(symbol=symbol, interval="1h", limit=90)
+        klines_data = await binance_fetcher.get_klines(
+            symbol=symbol,
+            interval=request.interval,
+            limit=request.limit
+        )
         formatted_data = binance_fetcher.format_klines_data(klines_data)
 
         # Run technical analysis
