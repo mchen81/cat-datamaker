@@ -176,3 +176,119 @@ class TradingSignalResponse(BaseModel):
                 "timestamp": "2024-01-01T12:00:00Z"
             }
         }
+
+
+class KillzoneRequest(BaseModel):
+    date: Optional[str] = Field(
+        None,
+        description="Target date in YYYY-MM-DD format (default: today)",
+        example="2024-01-01"
+    )
+    count: Optional[int] = Field(
+        10,
+        description="Number of days to look back from date (default: 10)",
+        example=10,
+        ge=1,
+        le=30
+    )
+    symbol: Optional[str] = Field(
+        "BTCUSDT",
+        description="Cryptocurrency symbol to analyze (e.g., 'BTC', 'ETH', 'BTCUSDT')",
+        example="BTCUSDT",
+        min_length=2,
+        max_length=20
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "date": "2024-01-01",
+                "count": 10,
+                "symbol": "BTCUSDT"
+            }
+        }
+
+
+class KillzoneData(BaseModel):
+    open: Optional[float] = Field(None, description="Opening price of the kill zone")
+    high: Optional[float] = Field(None, description="Highest price of the kill zone")
+    low: Optional[float] = Field(None, description="Lowest price of the kill zone")
+    close: Optional[float] = Field(None, description="Closing price of the kill zone")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "open": 45000.0,
+                "high": 45500.0,
+                "low": 44800.0,
+                "close": 45200.0
+            }
+        }
+
+
+class DailyKillzones(BaseModel):
+    Asia: KillzoneData = Field(..., description="Asia kill zone data (00:00-09:00 UTC)")
+    London: KillzoneData = Field(..., description="London kill zone data (07:00-16:00 UTC)")
+    NewYork: KillzoneData = Field(..., description="New York kill zone data (13:00-22:00 UTC)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "Asia": {
+                    "open": 45000.0,
+                    "high": 45500.0,
+                    "low": 44800.0,
+                    "close": 45200.0
+                },
+                "London": {
+                    "open": 45200.0,
+                    "high": 45800.0,
+                    "low": 45100.0,
+                    "close": 45600.0
+                },
+                "NewYork": {
+                    "open": 45600.0,
+                    "high": 46000.0,
+                    "low": 45400.0,
+                    "close": 45900.0
+                }
+            }
+        }
+
+
+class KillzoneResponse(BaseModel):
+    symbol: str = Field(..., description="Trading pair symbol")
+    data: Dict[str, DailyKillzones] = Field(..., description="Kill zone data by date")
+    weekStart: str = Field(..., description="Monday of the week for the input date (YYYY-MM-DD format)")
+    timestamp: str = Field(..., description="Response timestamp")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "symbol": "BTCUSDT",
+                "data": {
+                    "2024-01-01": {
+                        "Asia": {
+                            "open": 45000.0,
+                            "high": 45500.0,
+                            "low": 44800.0,
+                            "close": 45200.0
+                        },
+                        "London": {
+                            "open": 45200.0,
+                            "high": 45800.0,
+                            "low": 45100.0,
+                            "close": 45600.0
+                        },
+                        "NewYork": {
+                            "open": 45600.0,
+                            "high": 46000.0,
+                            "low": 45400.0,
+                            "close": 45900.0
+                        }
+                    }
+                },
+                "weekStart": "2023-12-25",
+                "timestamp": "2024-01-01T12:00:00Z"
+            }
+        }

@@ -1,6 +1,6 @@
 import os
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.security import APIKeyHeader
 
 from binance_data import BinanceDataFetcher
@@ -50,7 +50,8 @@ async def root():
             "/docs": "Swagger UI documentation",
             "/redoc": "ReDoc documentation",
             "/v1/analyze": "Comprehensive analysis endpoint",
-            "/v1/trading-signal": "GPT-optimized trading signals endpoint"
+            "/v1/trading-signal": "GPT-optimized trading signals endpoint",
+            "/v1/killzone": "Kill zone analysis endpoint"
         }
     }
 
@@ -181,3 +182,82 @@ async def get_trading_signal(request: AnalyzeRequest, _: bool = Depends(verify_a
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Trading signal analysis failed: {str(e)}")
+
+
+@app.get("/v1/killzone",
+         response_model=KillzoneResponse,
+         summary="Get Kill Zone Analysis",
+         description="Fetch cryptocurrency data and analyze kill zones (Asia, London, New York trading sessions) for multiple days",
+         response_description="Kill zone OHLC data organized by date and session")
+async def get_killzone_analysis(
+        date: Optional[str] = Query(None, description="Target date in YYYY-MM-DD format (default: today)"),
+        count: Optional[int] = Query(10, description="Number of days to look back from date (default: 10)", ge=1,
+                                     le=30),
+        symbol: Optional[str] = Query("BTCUSDT", description="Cryptocurrency symbol to analyze"),
+        _: bool = Depends(verify_api_key)
+):
+    """
+    Analyze cryptocurrency kill zones for multiple days.
+    
+    This endpoint:
+    1. Fetches 1-hour kline data from Binance for count * 24 periods
+    2. Groups data by date and identifies kill zone sessions
+    3. Calculates OHLC data for each kill zone (Asia, London, New York)
+    4. Returns organized data by date
+    
+    **Kill Zone Definitions (UTC):**
+    - **Asia**: 00:00-09:00 (9 hours)
+    - **London**: 07:00-16:00 (9 hours)
+    - **New York**: 13:00-22:00 (9 hours)
+    
+    **Parameters:**
+    - **date**: Target date (YYYY-MM-DD format). Defaults to today
+    - **count**: Number of days to analyze backwards from date (1-30, default: 10)
+    - **symbol**: Any valid Binance trading pair (e.g., BTC, ETH, ADA, etc.)
+    
+    **Returns:**
+    - OHLC data for each kill zone organized by date
+    - Null values for incomplete/future kill zones
+    
+    **Note:** If the symbol doesn't end with 'USDT', it will be automatically appended.
+    """
+    try:
+        # Initialize data fetcher
+        binance_fetcher = BinanceDataFetcher()
+
+        # Process symbol
+        processed_symbol = symbol.upper()
+        if not processed_symbol.endswith('USDT'):
+            processed_symbol = f"{processed_symbol}USDT"
+
+        # Calculate limit (count * 24 hours)
+        limit = count * 24
+
+        # Fetch 1-hour data from Binance
+        klines_data = await binance_fetcher.get_klines(
+            symbol=processed_symbol,
+            interval="1h",
+            limit=limit
+        )
+        formatted_data = binance_fetcher.format_klines_data(klines_data)
+
+        # Parse kill zone data
+        killzone_data = parse_killzone_data(
+            formatted_data=formatted_data,
+            target_date=date,
+            count=count
+        )
+
+        # Calculate week start for the input date
+        week_start = get_week_start(date)
+
+        # Return response
+        return KillzoneResponse(
+            symbol=processed_symbol,
+            data=killzone_data,
+            weekStart=week_start,
+            timestamp=datetime.now(timezone.utc).isoformat()
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Kill zone analysis failed: {str(e)}")

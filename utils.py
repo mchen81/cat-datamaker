@@ -1,7 +1,29 @@
-from datetime import datetime, timezone
-from typing import Dict, Any, List
+from datetime import datetime, timezone, timedelta
+from typing import List
 
 from models import *
+
+
+def get_week_start(date_str: str = None) -> str:
+    """
+    Get the Monday of the week for a given date
+    
+    Args:
+        date_str: Date in YYYY-MM-DD format (default: today)
+        
+    Returns:
+        Monday of the week in YYYY-MM-DD format
+    """
+    if date_str:
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    else:
+        target_date = datetime.now(timezone.utc).date()
+
+    # Calculate the number of days to subtract to get to Monday (weekday 0)
+    days_since_monday = target_date.weekday()
+    monday = target_date - timedelta(days=days_since_monday)
+
+    return monday.strftime('%Y-%m-%d')
 
 
 def calculate_trend_direction(close_prices: List[float], short_period: int = 5, medium_period: int = 20) -> tuple[
@@ -351,4 +373,122 @@ def process_for_trading_decision(
         confidence=round(confidence, 1),
         timeframe=timeframe,
         timestamp=datetime.now(timezone.utc).isoformat()
+    )
+
+
+def parse_killzone_data(formatted_data: Dict[str, List[float]], target_date: str = None, count: int = 10) -> Dict[
+    str, DailyKillzones]:
+    """
+    Parse 1-hour kline data into kill zones by date
+    
+    Args:
+        formatted_data: OHLCV data from Binance
+        target_date: Target date in YYYY-MM-DD format (default: today)
+        count: Number of days to include
+        
+    Returns:
+        Dictionary with date keys and DailyKillzones values
+    """
+    if not target_date:
+        target_date = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+
+    timestamps = formatted_data.get('timestamp', [])
+    opens = formatted_data.get('open', [])
+    highs = formatted_data.get('high', [])
+    lows = formatted_data.get('low', [])
+    closes = formatted_data.get('close', [])
+
+    if len(timestamps) != len(opens) or len(timestamps) == 0:
+        return {}
+
+    # Convert timestamps to datetime objects
+    dt_data = []
+    for i, ts in enumerate(timestamps):
+        dt = datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
+        dt_data.append({
+            'datetime': dt,
+            'date': dt.strftime('%Y-%m-%d'),
+            'hour': dt.hour,
+            'open': opens[i],
+            'high': highs[i],
+            'low': lows[i],
+            'close': closes[i]
+        })
+
+    # Group data by date
+    daily_data = {}
+    for item in dt_data:
+        date_key = item['date']
+        if date_key not in daily_data:
+            daily_data[date_key] = []
+        daily_data[date_key].append(item)
+
+    # Generate kill zones for each date
+    result = {}
+    target_dt = datetime.strptime(target_date, '%Y-%m-%d').date()
+
+    for i in range(count):
+        current_date = target_dt - timedelta(days=i)
+        date_str = current_date.strftime('%Y-%m-%d')
+
+        if date_str in daily_data:
+            hourly_data = daily_data[date_str]
+            killzones = extract_daily_killzones(hourly_data)
+            result[date_str] = killzones
+        else:
+            # If no data for this date, create empty kill zones
+            result[date_str] = DailyKillzones(
+                Asia=KillzoneData(),
+                London=KillzoneData(),
+                NewYork=KillzoneData()
+            )
+
+    return result
+
+
+def extract_daily_killzones(hourly_data: List[Dict]) -> DailyKillzones:
+    """
+    Extract kill zone data for a single day
+    
+    Kill zone definitions (UTC):
+    - Asia: 00:00-09:00 (hours 0-8)
+    - London: 07:00-16:00 (hours 7-15)  
+    - New York: 13:00-22:00 (hours 13-21)
+    """
+
+    def get_killzone_ohlc(hours: List[int]) -> KillzoneData:
+        """Get OHLC data for a specific kill zone"""
+        zone_data = [item for item in hourly_data if item['hour'] in hours]
+
+        if not zone_data:
+            return KillzoneData()
+
+        # Sort by hour to ensure proper open/close
+        zone_data.sort(key=lambda x: x['hour'])
+
+        open_price = zone_data[0]['open']
+        close_price = zone_data[-1]['close']
+        high_price = max(item['high'] for item in zone_data)
+        low_price = min(item['low'] for item in zone_data)
+
+        return KillzoneData(
+            open=open_price,
+            high=high_price,
+            low=low_price,
+            close=close_price
+        )
+
+    # Define kill zone hours
+    asia_hours = list(range(0, 9))  # 00:00-08:59 UTC
+    london_hours = list(range(7, 16))  # 07:00-15:59 UTC
+    newyork_hours = list(range(13, 22))  # 13:00-21:59 UTC
+
+    asia_kz = get_killzone_ohlc(asia_hours)
+    london_kz = get_killzone_ohlc(london_hours)
+    newyork_kz = get_killzone_ohlc(newyork_hours)
+
+    return DailyKillzones(
+        Asia=asia_kz,
+        London=london_kz,
+        NewYork=newyork_kz
     )
