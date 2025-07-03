@@ -11,6 +11,10 @@ GET /api/killzone-sessions/{symbol}/{timeframe}
 - **symbol**: 交易對 (例如: BTCUSDT)
 - **timeframe**: 時間框架 (建議使用: 15m, 1h)
 
+## Query Parameters
+
+- as_of_datetime: 可選的 ISO 8601 datetime 字串 (例如: 2024-01-01T00:00:00Z)
+
 ## 實作方法
 
 ### 1. 核心函數調用

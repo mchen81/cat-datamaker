@@ -11,6 +11,10 @@ GET /api/mtf-structure/{symbol}
 - **symbol**: 交易對 (例如: BTCUSDT)
 - 無需指定時間框架，API 會自動返回多個時間框架的數據
 
+## Query Parameters
+
+- as_of_datetime: 可選的 ISO 8601 datetime 字串 (例如: 2024-01-01T00:00:00Z)
+
 ## 實作方法
 
 ### 1. 時間框架層級

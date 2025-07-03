@@ -5,20 +5,14 @@ Accept: application/json
 
 ###
 
-POST http://127.0.0.1:8000/v1/analyze
-Content-Type: application/json
-
-{
-  "symbol": "BTC"
-}
+# Test market structure API - current data
+GET http://127.0.0.1:8000/api/market-structure/BTC/1h
+Accept: application/json
 
 ###
 
-POST http://127.0.0.1:8000/v1/analyze
-Content-Type: application/json
-
-{
-  "symbol": "ETHUSDT"
-}
+# Test market structure API - historical data
+GET http://127.0.0.1:8000/api/market-structure/BTC/1h?as_of_datetime=2024-01-01T00:00:00Z
+Accept: application/json
 
 ###

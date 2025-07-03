@@ -11,6 +11,10 @@ GET /api/liquidity-zones/{symbol}/{timeframe}
 - **symbol**: 交易對 (例如: BTCUSDT)
 - **timeframe**: 時間框架 (例如: 1h, 4h, 1d)
 
+## Query Parameters
+
+- as_of_datetime: 可選的 ISO 8601 datetime 字串 (例如: 2024-01-01T00:00:00Z)
+
 ## 實作方法
 
 ### 1. 核心函數調用

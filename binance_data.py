@@ -18,7 +18,8 @@ class BinanceDataFetcher:
         self.ssl_context.check_hostname = False
         self.ssl_context.verify_mode = ssl.CERT_NONE
 
-    async def get_klines(self, symbol: str = "BTCUSDT", interval: str = "1h", limit: int = 100) -> List[List[str]]:
+    async def get_klines(self, symbol: str = "BTCUSDT", interval: str = "1h", limit: int = 100, end_time: int = None) -> \
+    List[List[str]]:
         """
         Fetch kline/candlestick data from Binance
         
@@ -26,6 +27,7 @@ class BinanceDataFetcher:
             symbol: Trading pair symbol (e.g., BTCUSDT, ETHUSDT)
             interval: Kline interval (1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M)
             limit: Number of klines to fetch (max 1000)
+            end_time: End time in Unix timestamp milliseconds (optional)
             
         Returns:
             List of kline data
@@ -36,6 +38,9 @@ class BinanceDataFetcher:
             "interval": interval,
             "limit": limit
         }
+
+        if end_time is not None:
+            params["endTime"] = end_time
 
         # Create connector with SSL context
         connector = aiohttp.TCPConnector(ssl=self.ssl_context)
