@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from api_killzone_sessions import router as killzone_sessions_router
 from api_liquidity_zones import router as liquidity_zones_router
 from api_market_structure import router as market_structure_router
+from api_mtf_structure import router as mtf_structure_router
 from api_supply_demand_zones import router as supply_demand_zones_router
 
 app = FastAPI(
@@ -23,6 +24,7 @@ app.include_router(market_structure_router)
 app.include_router(liquidity_zones_router)
 app.include_router(supply_demand_zones_router)
 app.include_router(killzone_sessions_router)
+app.include_router(mtf_structure_router)
 
 
 @app.get("/",
@@ -41,6 +43,7 @@ async def root():
             "/api/market-structure/{symbol}/{timeframe}": "Market structure analysis endpoint",
             "/api/liquidity-zones/{symbol}/{timeframe}": "Liquidity zones analysis endpoint",
             "/api/supply-demand-zones/{symbol}/{timeframe}": "Supply demand zones analysis endpoint",
-            "/api/killzone-sessions/{symbol}/{timeframe}": "Killzone sessions analysis endpoint"
+            "/api/killzone-sessions/{symbol}/{timeframe}": "Killzone sessions analysis endpoint",
+            "/api/mtf-structure/{symbol}": "Multi-timeframe structure analysis endpoint"
         }
     }
