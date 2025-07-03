@@ -1889,3 +1889,557 @@ async def get_technical_indicators(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Technical indicators analysis failed: {str(e)}")
+
+
+@router.get("/api/technical-indicators/doc",
+            summary="Technical Indicators API Documentation",
+            description="Get comprehensive documentation for the Technical Indicators API response format")
+async def get_technical_indicators_documentation():
+    """
+    Get comprehensive documentation for the Technical Indicators API response format.
+    
+    This endpoint provides detailed explanations of all response fields, enums, and technical concepts
+    used in the technical indicators analysis API.
+    """
+    return {
+        "api_endpoint": "/api/technical-indicators/{symbol}/{timeframe}",
+        "description": "Traditional Technical Indicators Analysis optimized for GPT processing",
+        "response_format": {
+            "symbol": {
+                "type": "string",
+                "description": "Trading pair symbol (e.g., BTCUSDT)",
+                "example": "BTCUSDT"
+            },
+            "timeframe": {
+                "type": "string",
+                "description": "Analysis timeframe",
+                "possible_values": ["1m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w",
+                                    "1M"],
+                "example": "4h"
+            },
+            "timestamp": {
+                "type": "string",
+                "description": "ISO 8601 timestamp of analysis",
+                "example": "2024-01-01T12:00:00Z"
+            },
+            "current_price": {
+                "type": "float",
+                "description": "Current price at time of analysis",
+                "example": 95000.0
+            },
+            "momentum_indicators": {
+                "type": "MomentumIndicators",
+                "description": "Momentum analysis including RSI and MACD",
+                "fields": {
+                    "rsi": {
+                        "type": "RSIData",
+                        "description": "RSI analysis with divergence detection",
+                        "fields": {
+                            "status": {
+                                "type": "RSIStatus",
+                                "possible_values": ["OVERSOLD", "NEUTRAL", "OVERBOUGHT"],
+                                "interpretation": {
+                                    "OVERSOLD": "RSI below 30, potential bounce opportunity",
+                                    "NEUTRAL": "RSI between 30-70, no extreme condition",
+                                    "OVERBOUGHT": "RSI above 70, potential reversal risk"
+                                }
+                            },
+                            "value_range": {
+                                "type": "string",
+                                "description": "Current RSI value range",
+                                "possible_values": ["0-20", "20-30", "30-50", "50-70", "70-80", "80-100"]
+                            },
+                            "trend": {
+                                "type": "TrendDirection",
+                                "possible_values": ["RISING", "FALLING", "SIDEWAYS"],
+                                "interpretation": {
+                                    "RISING": "RSI trending upward, bullish momentum",
+                                    "FALLING": "RSI trending downward, bearish momentum",
+                                    "SIDEWAYS": "RSI moving sideways, neutral momentum"
+                                }
+                            },
+                            "divergence": {
+                                "type": "DivergenceData",
+                                "description": "Divergence detection between price and RSI",
+                                "fields": {
+                                    "detected": "Boolean indicating if divergence exists",
+                                    "type": {
+                                        "type": "DivergenceType",
+                                        "possible_values": ["BULLISH_DIVERGENCE", "BEARISH_DIVERGENCE",
+                                                            "HIDDEN_BULLISH", "HIDDEN_BEARISH"],
+                                        "interpretation": {
+                                            "BULLISH_DIVERGENCE": "Price lower low, RSI higher low - potential reversal up",
+                                            "BEARISH_DIVERGENCE": "Price higher high, RSI lower high - potential reversal down",
+                                            "HIDDEN_BULLISH": "Price higher low, RSI lower low - trend continuation up",
+                                            "HIDDEN_BEARISH": "Price lower high, RSI higher high - trend continuation down"
+                                        }
+                                    },
+                                    "strength": {
+                                        "type": "DivergenceStrength",
+                                        "possible_values": ["STRONG", "MODERATE", "WEAK"]
+                                    },
+                                    "description": "Detailed description of the divergence"
+                                }
+                            },
+                            "key_levels": {
+                                "type": "RSIKeyLevels",
+                                "description": "Key RSI levels and conditions",
+                                "fields": {
+                                    "oversold": "Boolean - RSI below 30",
+                                    "overbought": "Boolean - RSI above 70",
+                                    "previous_extreme": "Description of recent RSI extreme"
+                                }
+                            }
+                        }
+                    },
+                    "momentum_oscillator": {
+                        "type": "MomentumOscillator",
+                        "description": "MACD momentum analysis",
+                        "fields": {
+                            "status": {
+                                "type": "MomentumStatus",
+                                "possible_values": ["BULLISH", "BEARISH", "NEUTRAL"],
+                                "interpretation": {
+                                    "BULLISH": "MACD above signal line and positive",
+                                    "BEARISH": "MACD below signal line and negative",
+                                    "NEUTRAL": "MACD signals are mixed or weak"
+                                }
+                            },
+                            "strength": {
+                                "type": "SignalStrength",
+                                "possible_values": ["VERY_STRONG", "STRONG", "MODERATE", "WEAK", "VERY_WEAK"]
+                            },
+                            "acceleration": {
+                                "type": "MomentumAcceleration",
+                                "possible_values": ["INCREASING", "DECREASING", "STEADY"],
+                                "interpretation": {
+                                    "INCREASING": "Momentum accelerating in current direction",
+                                    "DECREASING": "Momentum slowing down",
+                                    "STEADY": "Momentum unchanged"
+                                }
+                            },
+                            "cross_signal": {
+                                "type": "CrossSignal",
+                                "possible_values": ["BULLISH_CROSS", "BEARISH_CROSS", "NONE"],
+                                "interpretation": {
+                                    "BULLISH_CROSS": "MACD crossed above signal line - bullish signal",
+                                    "BEARISH_CROSS": "MACD crossed below signal line - bearish signal",
+                                    "NONE": "No recent cross signals"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "volume_analysis": {
+                "type": "VolumeAnalysis",
+                "description": "Comprehensive volume analysis including smart money flow",
+                "fields": {
+                    "current_volume_profile": {
+                        "type": "VolumeProfile",
+                        "possible_values": ["VERY_HIGH", "ABOVE_AVERAGE", "AVERAGE", "BELOW_AVERAGE", "VERY_LOW"],
+                        "interpretation": {
+                            "VERY_HIGH": "Volume 3x+ above average - significant interest",
+                            "ABOVE_AVERAGE": "Volume 1.5-3x above average - increased interest",
+                            "AVERAGE": "Normal volume levels",
+                            "BELOW_AVERAGE": "Volume below normal - reduced interest",
+                            "VERY_LOW": "Volume 30% below average - very low participation"
+                        }
+                    },
+                    "volume_trend": {
+                        "type": "TrendDirection",
+                        "possible_values": ["RISING", "FALLING", "SIDEWAYS"],
+                        "description": "Direction of volume trend over recent periods"
+                    },
+                    "volume_confirmation": {
+                        "type": "boolean",
+                        "description": "Whether volume confirms price action",
+                        "interpretation": {
+                            "true": "Volume supports current price movement",
+                            "false": "Volume does not confirm price movement"
+                        }
+                    },
+                    "unusual_activity": {
+                        "type": "UnusualActivity",
+                        "description": "Detection of unusual volume spikes or drying up",
+                        "fields": {
+                            "detected": "Boolean indicating unusual volume activity",
+                            "type": {
+                                "type": "UnusualActivityType",
+                                "possible_values": ["VOLUME_SPIKE", "VOLUME_DRYUP", "ACCUMULATION", "DISTRIBUTION"]
+                            },
+                            "magnitude": "Description of activity magnitude (e.g., '2.5X_AVERAGE')",
+                            "interpretation": "What the unusual activity might indicate"
+                        }
+                    },
+                    "volume_patterns": {
+                        "type": "VolumePatterns",
+                        "description": "Volume patterns indicating accumulation or distribution",
+                        "fields": {
+                            "accumulation": "Boolean - accumulation pattern detected",
+                            "distribution": "Boolean - distribution pattern detected",
+                            "pattern": {
+                                "type": "VolumePattern",
+                                "possible_values": ["RISING_PRICE_RISING_VOLUME", "RISING_PRICE_FALLING_VOLUME",
+                                                    "FALLING_PRICE_RISING_VOLUME", "FALLING_PRICE_FALLING_VOLUME"],
+                                "interpretation": {
+                                    "RISING_PRICE_RISING_VOLUME": "Healthy uptrend with volume support",
+                                    "RISING_PRICE_FALLING_VOLUME": "Weakening uptrend, potential reversal",
+                                    "FALLING_PRICE_RISING_VOLUME": "Strong selling pressure or potential bottom",
+                                    "FALLING_PRICE_FALLING_VOLUME": "Weak selling pressure, potential exhaustion"
+                                }
+                            }
+                        }
+                    },
+                    "smart_money_flow": {
+                        "type": "SmartMoneyFlow",
+                        "description": "Analysis of institutional money flow using Money Flow Index",
+                        "fields": {
+                            "direction": {
+                                "type": "SmartMoneyDirection",
+                                "possible_values": ["INFLOW", "OUTFLOW", "NEUTRAL"],
+                                "interpretation": {
+                                    "INFLOW": "Smart money flowing in, institutional buying",
+                                    "OUTFLOW": "Smart money flowing out, institutional selling",
+                                    "NEUTRAL": "Balanced smart money flow"
+                                }
+                            },
+                            "strength": {
+                                "type": "SmartMoneyStrength",
+                                "possible_values": ["STRONG", "MODERATE", "WEAK"]
+                            },
+                            "persistence": "Duration of current flow direction (e.g., '3_CONSECUTIVE_BARS')"
+                        }
+                    }
+                }
+            },
+            "volatility_metrics": {
+                "type": "VolatilityMetrics",
+                "description": "Volatility analysis using ATR and regime classification",
+                "fields": {
+                    "atr_status": {
+                        "type": "ATRStatus",
+                        "possible_values": ["EXTREME", "HIGH", "NORMAL", "LOW"],
+                        "interpretation": {
+                            "EXTREME": "Very high volatility, use wider stops",
+                            "HIGH": "Above average volatility, adjust position size",
+                            "NORMAL": "Normal volatility conditions",
+                            "LOW": "Below average volatility, potential breakout coming"
+                        }
+                    },
+                    "volatility_trend": {
+                        "type": "TrendDirection",
+                        "possible_values": ["RISING", "FALLING", "SIDEWAYS"],
+                        "description": "Direction of volatility trend"
+                    },
+                    "current_range": {
+                        "type": "CurrentRange",
+                        "possible_values": ["VERY_HIGH", "HIGH", "MEDIUM", "LOW", "VERY_LOW"],
+                        "description": "Current trading range relative to historical ATR"
+                    },
+                    "range_expansion": {
+                        "type": "boolean",
+                        "description": "Whether trading range is expanding",
+                        "interpretation": {
+                            "true": "Volatility increasing, expect larger moves",
+                            "false": "Volatility stable or contracting"
+                        }
+                    },
+                    "suggested_stop_distance": {
+                        "type": "string",
+                        "description": "Suggested stop-loss distance as percentage (e.g., '2.5%')",
+                        "calculation": "1.5 x ATR / current_price * 100"
+                    },
+                    "volatility_regime": {
+                        "type": "VolatilityRegime",
+                        "possible_values": ["EXPANSION", "CONSOLIDATION", "BREAKOUT", "SQUEEZE"],
+                        "interpretation": {
+                            "EXPANSION": "High volatility environment, trending market",
+                            "CONSOLIDATION": "Normal volatility, ranging market",
+                            "BREAKOUT": "Recent volatility increase, new trend starting",
+                            "SQUEEZE": "Low volatility, compressed range, breakout pending"
+                        }
+                    }
+                }
+            },
+            "market_strength": {
+                "type": "MarketStrength",
+                "description": "Comprehensive market strength assessment",
+                "fields": {
+                    "overall_score": {
+                        "type": "float",
+                        "description": "Overall market strength score from 0-10",
+                        "interpretation": {
+                            "8-10": "Very strong market conditions",
+                            "6-8": "Strong market conditions",
+                            "4-6": "Neutral market conditions",
+                            "2-4": "Weak market conditions",
+                            "0-2": "Very weak market conditions"
+                        }
+                    },
+                    "trend_strength": {
+                        "type": "MarketStrengthTrend",
+                        "possible_values": ["STRONG_BULLISH", "MODERATE_BULLISH", "WEAK_BULLISH", "NEUTRAL",
+                                            "WEAK_BEARISH", "MODERATE_BEARISH", "STRONG_BEARISH"]
+                    },
+                    "buy_pressure": {
+                        "type": "BuySellPressure",
+                        "possible_values": ["EXTREME", "HIGH", "MODERATE", "LOW", "VERY_LOW"],
+                        "description": "Current buying pressure in the market"
+                    },
+                    "sell_pressure": {
+                        "type": "BuySellPressure",
+                        "possible_values": ["EXTREME", "HIGH", "MODERATE", "LOW", "VERY_LOW"],
+                        "description": "Current selling pressure in the market"
+                    },
+                    "strength_components": {
+                        "type": "StrengthComponents",
+                        "description": "Breakdown of strength score components",
+                        "fields": {
+                            "price_action": "Price action score 0-10",
+                            "volume": "Volume score 0-10",
+                            "momentum": "Momentum score 0-10",
+                            "volatility": "Volatility score 0-10"
+                        }
+                    },
+                    "market_phase": {
+                        "type": "MarketPhase",
+                        "possible_values": ["EARLY_TREND", "MATURE_TREND", "LATE_TREND", "REVERSAL", "CONSOLIDATION"],
+                        "interpretation": {
+                            "EARLY_TREND": "New trend beginning, good entry opportunity",
+                            "MATURE_TREND": "Trend well established, follow momentum",
+                            "LATE_TREND": "Trend aging, watch for reversal signs",
+                            "REVERSAL": "Trend reversal in progress",
+                            "CONSOLIDATION": "Sideways movement, wait for breakout"
+                        }
+                    }
+                }
+            },
+            "confluences": {
+                "type": "Confluences",
+                "description": "Analysis of signal alignment and confluences",
+                "fields": {
+                    "bullish_signals": {
+                        "type": "array",
+                        "description": "List of bullish signals detected",
+                        "examples": ["RSI bullish divergence", "Smart money flowing in", "Volume confirms price action"]
+                    },
+                    "bearish_signals": {
+                        "type": "array",
+                        "description": "List of bearish signals detected",
+                        "examples": ["RSI bearish divergence", "Smart money flowing out",
+                                     "Distribution pattern detected"]
+                    },
+                    "neutral_factors": {
+                        "type": "array",
+                        "description": "List of neutral or conflicting factors",
+                        "examples": ["RSI in neutral zone", "Volatility contracting", "Mixed volume signals"]
+                    },
+                    "signal_alignment": {
+                        "type": "SignalAlignment",
+                        "possible_values": ["STRONG_BULLISH_BIAS", "BULLISH_BIAS", "NEUTRAL_BULLISH_BIAS", "NEUTRAL",
+                                            "NEUTRAL_BEARISH_BIAS", "BEARISH_BIAS", "STRONG_BEARISH_BIAS"],
+                        "interpretation": {
+                            "STRONG_BULLISH_BIAS": "80%+ signals bullish, high confidence long bias",
+                            "BULLISH_BIAS": "65%+ signals bullish, moderate confidence long bias",
+                            "NEUTRAL_BULLISH_BIAS": "55%+ signals bullish, slight long bias",
+                            "NEUTRAL": "Signals balanced, no clear bias",
+                            "NEUTRAL_BEARISH_BIAS": "55%+ signals bearish, slight short bias",
+                            "BEARISH_BIAS": "65%+ signals bearish, moderate confidence short bias",
+                            "STRONG_BEARISH_BIAS": "80%+ signals bearish, high confidence short bias"
+                        }
+                    },
+                    "confidence_score": {
+                        "type": "float",
+                        "description": "Confidence in signal alignment from 0-10",
+                        "interpretation": {
+                            "8-10": "Very high confidence, act on signals",
+                            "6-8": "High confidence, good signal quality",
+                            "4-6": "Moderate confidence, wait for confirmation",
+                            "2-4": "Low confidence, avoid large positions",
+                            "0-2": "Very low confidence, stay flat"
+                        }
+                    }
+                }
+            },
+            "indicator_summary": {
+                "type": "IndicatorSummary",
+                "description": "Summary of all indicators with actionable insights",
+                "fields": {
+                    "primary_signal": {
+                        "type": "PrimarySignal",
+                        "possible_values": ["STRONG_BULLISH", "BULLISH", "NEUTRAL_BULLISH", "NEUTRAL",
+                                            "NEUTRAL_BEARISH", "BEARISH", "STRONG_BEARISH"]
+                    },
+                    "signal_strength": {
+                        "type": "SignalStrength",
+                        "possible_values": ["VERY_STRONG", "STRONG", "MODERATE", "WEAK", "VERY_WEAK"]
+                    },
+                    "key_observation": {
+                        "type": "string",
+                        "description": "Most important observation from the analysis",
+                        "examples": ["RSI bullish divergence suggests potential upward move",
+                                     "Mixed signals: volume spike vs RSI overbought"]
+                    },
+                    "caution_notes": {
+                        "type": "string",
+                        "description": "Important warnings and risk factors",
+                        "examples": ["Late trend phase - watch for reversal signs",
+                                     "RSI overbought - potential pullback risk"]
+                    },
+                    "recommended_action": {
+                        "type": "RecommendedAction",
+                        "possible_values": ["STRONG_BUY", "BUY", "LOOK_FOR_LONG_ENTRIES", "HOLD", "NEUTRAL",
+                                            "LOOK_FOR_SHORT_ENTRIES", "SELL", "STRONG_SELL"],
+                        "interpretation": {
+                            "STRONG_BUY": "Strong bullish signals, aggressive buying recommended",
+                            "BUY": "Good bullish signals, consider buying",
+                            "LOOK_FOR_LONG_ENTRIES": "Bullish bias, wait for good long entry",
+                            "HOLD": "Maintain current positions",
+                            "NEUTRAL": "No clear direction, stay flat",
+                            "LOOK_FOR_SHORT_ENTRIES": "Bearish bias, wait for good short entry",
+                            "SELL": "Good bearish signals, consider selling",
+                            "STRONG_SELL": "Strong bearish signals, aggressive selling recommended"
+                        }
+                    },
+                    "invalidation_scenario": {
+                        "type": "string",
+                        "description": "Scenario that would invalidate the current signal",
+                        "examples": ["Loss of volume support or RSI breakdown below 40",
+                                     "Volume surge with RSI recovery above 60"]
+                    }
+                }
+            },
+            "trading_conditions": {
+                "type": "TradingConditions",
+                "description": "Current trading environment assessment",
+                "fields": {
+                    "market_state": {
+                        "type": "MarketState",
+                        "possible_values": ["TRENDING", "RANGING", "TRANSITIONING", "VOLATILE"],
+                        "interpretation": {
+                            "TRENDING": "Clear directional movement, follow trend",
+                            "RANGING": "Sideways movement, use mean reversion",
+                            "TRANSITIONING": "Market changing state, be cautious",
+                            "VOLATILE": "High volatility, adjust position sizes"
+                        }
+                    },
+                    "trend_maturity": {
+                        "type": "TrendMaturity",
+                        "possible_values": ["EARLY", "MIDDLE", "LATE", "EXHAUSTED"],
+                        "interpretation": {
+                            "EARLY": "Trend just starting, good entry opportunity",
+                            "MIDDLE": "Trend established, follow momentum",
+                            "LATE": "Trend aging, prepare for reversal",
+                            "EXHAUSTED": "Trend exhausted, reversal likely"
+                        }
+                    },
+                    "optimal_strategy": {
+                        "type": "OptimalStrategy",
+                        "possible_values": ["TREND_FOLLOWING", "MEAN_REVERSION", "BREAKOUT", "SCALPING",
+                                            "WAIT_AND_SEE"],
+                        "interpretation": {
+                            "TREND_FOLLOWING": "Follow the established trend",
+                            "MEAN_REVERSION": "Trade bounces off support/resistance",
+                            "BREAKOUT": "Look for breakout opportunities",
+                            "SCALPING": "Short-term trades in volatile conditions",
+                            "WAIT_AND_SEE": "Unclear conditions, avoid trading"
+                        }
+                    },
+                    "risk_environment": {
+                        "type": "RiskEnvironment",
+                        "possible_values": ["LOW", "NORMAL", "ELEVATED", "HIGH"],
+                        "interpretation": {
+                            "LOW": "Low risk environment, can use tighter stops",
+                            "NORMAL": "Normal risk conditions",
+                            "ELEVATED": "Elevated risk, reduce position sizes",
+                            "HIGH": "High risk environment, use wide stops or avoid trading"
+                        }
+                    },
+                    "session_alignment": {
+                        "type": "boolean",
+                        "description": "Whether trading session supports current analysis",
+                        "interpretation": {
+                            "true": "Good trading conditions for current session",
+                            "false": "Wait for better session alignment"
+                        }
+                    }
+                }
+            }
+        },
+        "technical_concepts": {
+            "rsi_divergence": {
+                "description": "When price and RSI move in opposite directions",
+                "bullish_divergence": "Price makes lower low while RSI makes higher low - potential reversal up",
+                "bearish_divergence": "Price makes higher high while RSI makes lower high - potential reversal down",
+                "hidden_divergence": "Signals trend continuation rather than reversal",
+                "trading_significance": "Divergences often precede price reversals by several periods"
+            },
+            "volume_analysis": {
+                "description": "Analysis of volume patterns and smart money flow",
+                "volume_confirmation": "High volume on price moves indicates strong conviction",
+                "accumulation": "Rising price with rising volume - healthy uptrend",
+                "distribution": "Rising price with falling volume - potential weakness",
+                "smart_money_flow": "Money Flow Index (MFI) indicates institutional activity"
+            },
+            "volatility_regimes": {
+                "description": "Different market volatility environments",
+                "expansion": "High volatility trending market - follow momentum",
+                "consolidation": "Normal volatility ranging market - mean reversion",
+                "squeeze": "Low volatility before breakout - prepare for expansion",
+                "breakout": "Recent volatility increase - new trend starting"
+            },
+            "signal_confluence": {
+                "description": "When multiple indicators agree on direction",
+                "high_confluence": "Multiple indicators aligned - higher probability trades",
+                "low_confluence": "Indicators disagree - lower probability, wait for clarity",
+                "confidence_scoring": "Percentage of indicators supporting primary direction"
+            },
+            "market_strength_scoring": {
+                "description": "Composite score across multiple factors",
+                "components": {
+                    "price_action": "Recent price movement strength and consistency",
+                    "volume": "Volume profile and smart money flow",
+                    "momentum": "RSI trends and divergences",
+                    "volatility": "ATR status and regime classification"
+                },
+                "weighting": "Price action 30%, Volume 25%, Momentum 25%, Volatility 20%"
+            }
+        },
+        "usage_examples": {
+            "strong_bullish_setup": {
+                "scenario": "RSI bullish divergence + smart money inflow + volume confirmation",
+                "signals": ["RSI bullish divergence", "Smart money flowing in", "Volume confirms price action"],
+                "confidence": "High (8-10)",
+                "action": "STRONG_BUY or LOOK_FOR_LONG_ENTRIES",
+                "risk_management": "Use suggested stop distance from volatility metrics"
+            },
+            "mixed_signals": {
+                "scenario": "RSI overbought + volume spike + bullish MACD cross",
+                "signals": ["RSI overbought, potential reversal", "Volume spike detected", "MACD bullish cross"],
+                "confidence": "Moderate (5-7)",
+                "action": "HOLD or wait for clarity",
+                "risk_management": "Smaller position sizes due to conflicting signals"
+            },
+            "bearish_confluence": {
+                "scenario": "RSI bearish divergence + smart money outflow + distribution pattern",
+                "signals": ["RSI bearish divergence", "Smart money flowing out", "Distribution pattern detected"],
+                "confidence": "High (8-10)",
+                "action": "STRONG_SELL or LOOK_FOR_SHORT_ENTRIES",
+                "risk_management": "Use wider stops in high volatility environment"
+            }
+        },
+        "integration_with_smc": {
+            "description": "How technical indicators complement Smart Money Concepts",
+            "divergences": "RSI divergences often align with SMC structure breaks",
+            "volume_analysis": "Volume spikes confirm SMC order block tests",
+            "volatility_regimes": "Different regimes favor different SMC strategies",
+            "confluence_approach": "Combine traditional indicators with SMC for higher probability setups"
+        },
+        "risk_management": {
+            "stop_loss_guidance": "Use suggested_stop_distance from volatility metrics",
+            "position_sizing": "Reduce size in high volatility or low confidence environments",
+            "signal_strength": "Match position size to signal strength and confidence",
+            "invalidation_levels": "Clear exit rules provided in invalidation_scenario"
+        }
+    }

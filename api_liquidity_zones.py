@@ -740,3 +740,382 @@ async def get_liquidity_zones(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Liquidity zones analysis failed: {str(e)}")
+
+
+@router.get("/api/liquidity-zones/doc",
+            summary="Liquidity Zones API Documentation",
+            description="Get comprehensive documentation for the Liquidity Zones API response format")
+async def get_liquidity_zones_documentation():
+    """
+    Get detailed documentation for the Liquidity Zones API response format.
+    
+    This endpoint explains all fields, enums, and data structures returned by the
+    /api/liquidity-zones/{symbol}/{timeframe} endpoint.
+    """
+    return {
+        "api_endpoint": "/api/liquidity-zones/{symbol}/{timeframe}",
+        "description": "Analyzes liquidity zones using Smart Money Concepts (SMC) to identify areas where institutional orders may be resting, including equal highs/lows, previous timeframe levels, and trading session liquidity.",
+
+        "response_structure": {
+            "symbol": {
+                "type": "string",
+                "description": "Trading pair symbol",
+                "example": "BTCUSDT"
+            },
+            "timeframe": {
+                "type": "string",
+                "description": "Analysis timeframe",
+                "example": "4h"
+            },
+            "timestamp": {
+                "type": "string",
+                "description": "ISO 8601 timestamp of analysis",
+                "example": "2024-01-01T12:00:00Z"
+            },
+            "current_price": {
+                "type": "number",
+                "description": "Current market price",
+                "example": 45000.50
+            }
+        },
+
+        "liquidity_pools": {
+            "description": "Buy-side and sell-side liquidity pool collections",
+            "fields": {
+                "buy_side_liquidity": {
+                    "type": "array",
+                    "description": "Liquidity pools below current price (support areas where buy orders may rest)",
+                    "max_items": 8,
+                    "sorted_by": "Distance from current price (nearest first)"
+                },
+                "sell_side_liquidity": {
+                    "type": "array",
+                    "description": "Liquidity pools above current price (resistance areas where sell orders may rest)",
+                    "max_items": 8,
+                    "sorted_by": "Distance from current price (nearest first)"
+                }
+            },
+            "liquidity_pool_fields": {
+                "level": {
+                    "type": "number",
+                    "description": "Exact price level of the liquidity pool",
+                    "example": 44200.0
+                },
+                "distance_from_current": {
+                    "type": "string",
+                    "description": "Percentage distance from current price",
+                    "example": "-1.8%",
+                    "note": "Negative values are below current price, positive above"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of liquidity pool identified",
+                    "possible_values": {
+                        "Equal Highs": "Multiple swing highs at same level",
+                        "Equal Lows": "Multiple swing lows at same level",
+                        "Previous Daily High": "Previous day's high level",
+                        "Previous Daily Low": "Previous day's low level",
+                        "Previous Weekly High": "Previous week's high level",
+                        "Previous Weekly Low": "Previous week's low level"
+                    }
+                },
+                "status": {
+                    "type": "enum",
+                    "description": "Current status of the liquidity pool",
+                    "possible_values": {
+                        "UNTAPPED": "Level has not been reached/broken",
+                        "SWEPT": "Level has been broken and liquidity taken",
+                        "PARTIALLY_SWEPT": "Level partially broken but some liquidity remains"
+                    }
+                },
+                "formation_candles": {
+                    "type": "array[integer]",
+                    "description": "Candle indices where the liquidity level was formed",
+                    "example": [-15, -12, -8],
+                    "note": "Negative values indicate candles in the past"
+                },
+                "sweep_candle": {
+                    "type": "integer",
+                    "description": "Candle index where level was swept (if status is SWEPT)",
+                    "example": -3,
+                    "note": "Only present if status is SWEPT or PARTIALLY_SWEPT"
+                },
+                "age_hours": {
+                    "type": "integer",
+                    "description": "Hours since the liquidity level was formed",
+                    "example": 48
+                },
+                "strength": {
+                    "type": "integer",
+                    "description": "Strength score of the liquidity pool",
+                    "range": "1-10",
+                    "interpretation": {
+                        "1-3": "Weak liquidity, may not hold",
+                        "4-6": "Moderate liquidity strength",
+                        "7-10": "Strong liquidity, high probability of reaction"
+                    }
+                },
+                "sweep_probability": {
+                    "type": "enum",
+                    "description": "Probability that this level will be swept",
+                    "possible_values": {
+                        "VERY_HIGH": "85-100% probability of being swept",
+                        "HIGH": "65-85% probability of being swept",
+                        "MEDIUM": "35-65% probability of being swept",
+                        "LOW": "0-35% probability of being swept"
+                    }
+                }
+            }
+        },
+
+        "timeframe_highs_lows": {
+            "description": "Multi-timeframe previous highs and lows analysis",
+            "structure": "Dictionary with timeframe keys (daily, weekly, monthly)",
+            "fields": {
+                "previous_high": {
+                    "type": "number",
+                    "description": "Previous timeframe high level",
+                    "example": 46500.0,
+                    "note": "Null if no previous high available"
+                },
+                "previous_low": {
+                    "type": "number",
+                    "description": "Previous timeframe low level",
+                    "example": 43200.0,
+                    "note": "Null if no previous low available"
+                },
+                "current_position": {
+                    "type": "enum",
+                    "description": "Current price position relative to timeframe range",
+                    "possible_values": {
+                        "ABOVE_RANGE": "Price above previous high",
+                        "UPPER_THIRD": "Price in upper third of range",
+                        "MID_RANGE": "Price in middle of range",
+                        "LOWER_THIRD": "Price in lower third of range",
+                        "BELOW_RANGE": "Price below previous low",
+                        "INSIDE_RANGE": "Price within the range"
+                    }
+                },
+                "high_distance": {
+                    "type": "string",
+                    "description": "Percentage distance to previous high",
+                    "example": "+3.2%"
+                },
+                "low_distance": {
+                    "type": "string",
+                    "description": "Percentage distance to previous low",
+                    "example": "-4.1%"
+                }
+            }
+        },
+
+        "session_liquidity": {
+            "description": "Trading session liquidity analysis",
+            "structure": "Dictionary with session keys (asia, london, new_york)",
+            "fields": {
+                "high": {
+                    "type": "number",
+                    "description": "Session high price",
+                    "example": 45200.0
+                },
+                "low": {
+                    "type": "number",
+                    "description": "Session low price",
+                    "example": 44100.0
+                },
+                "high_swept": {
+                    "type": "boolean",
+                    "description": "Whether session high has been broken",
+                    "interpretation": {
+                        "true": "Session high liquidity has been taken",
+                        "false": "Session high liquidity still intact"
+                    }
+                },
+                "low_swept": {
+                    "type": "boolean",
+                    "description": "Whether session low has been broken",
+                    "interpretation": {
+                        "true": "Session low liquidity has been taken",
+                        "false": "Session low liquidity still intact"
+                    }
+                },
+                "session_range": {
+                    "type": "number",
+                    "description": "Session range in price points",
+                    "example": 1100.0,
+                    "calculation": "session_high - session_low"
+                }
+            }
+        },
+
+        "liquidity_analysis": {
+            "description": "Comprehensive liquidity analysis and trading recommendations",
+            "fields": {
+                "primary_target": {
+                    "type": "object",
+                    "description": "Primary liquidity target for price to reach",
+                    "fields": {
+                        "direction": {
+                            "type": "string",
+                            "description": "Target direction",
+                            "possible_values": {
+                                "BUY_SIDE": "Expecting move down to take buy-side liquidity",
+                                "SELL_SIDE": "Expecting move up to take sell-side liquidity"
+                            }
+                        },
+                        "level": {
+                            "type": "number",
+                            "description": "Target price level",
+                            "example": 44000.0
+                        },
+                        "reason": {
+                            "type": "string",
+                            "description": "Reasoning for this target",
+                            "example": "Equal lows with high sweep probability"
+                        }
+                    }
+                },
+                "secondary_target": {
+                    "type": "object",
+                    "description": "Secondary liquidity target (same structure as primary_target)",
+                    "note": "May be null if no secondary target identified"
+                },
+                "liquidity_imbalance": {
+                    "type": "enum",
+                    "description": "Overall distribution of liquidity pools",
+                    "possible_values": {
+                        "SELL_SIDE_HEAVY": "More liquidity above price, expect upward move",
+                        "BUY_SIDE_HEAVY": "More liquidity below price, expect downward move",
+                        "BALANCED": "Roughly equal liquidity distribution"
+                    }
+                },
+                "recommended_bias": {
+                    "type": "enum",
+                    "description": "Recommended trading bias based on liquidity analysis",
+                    "possible_values": {
+                        "BULLISH_SWEEP_LIKELY": "Expect upward move to take sell-side liquidity",
+                        "BEARISH_SWEEP_LIKELY": "Expect downward move to take buy-side liquidity",
+                        "RANGE_BOUND": "Price likely to stay within current range",
+                        "BREAKOUT_PENDING": "Expect significant move but direction unclear"
+                    }
+                },
+                "key_message": {
+                    "type": "string",
+                    "description": "Summary message with key liquidity insights",
+                    "example": "Price targeting buy-side liquidity at 44000. Watch for rejection at current level."
+                }
+            }
+        },
+
+        "liquidity_metrics": {
+            "description": "Quantitative liquidity metrics and summary statistics",
+            "fields": {
+                "total_buy_side_pools": {
+                    "type": "integer",
+                    "description": "Number of buy-side liquidity pools identified",
+                    "example": 5
+                },
+                "total_sell_side_pools": {
+                    "type": "integer",
+                    "description": "Number of sell-side liquidity pools identified",
+                    "example": 3
+                },
+                "nearest_untapped_above": {
+                    "type": "number",
+                    "description": "Nearest untapped liquidity level above current price",
+                    "example": 45500.0,
+                    "note": "Null if no untapped liquidity above"
+                },
+                "nearest_untapped_below": {
+                    "type": "number",
+                    "description": "Nearest untapped liquidity level below current price",
+                    "example": 43800.0,
+                    "note": "Null if no untapped liquidity below"
+                },
+                "liquidity_void_zones": {
+                    "type": "array",
+                    "description": "Areas with thin liquidity where price may move quickly",
+                    "item_fields": {
+                        "range": {
+                            "type": "array[number]",
+                            "description": "Price range of void zone [low, high]",
+                            "example": [44800, 45100]
+                        },
+                        "description": {
+                            "type": "string",
+                            "description": "Description of the void zone",
+                            "example": "Gap between equal highs and session resistance"
+                        }
+                    }
+                }
+            }
+        },
+
+        "trading_concepts": {
+            "liquidity_hunt": {
+                "description": "Market makers often target areas of high liquidity concentration to fill large orders",
+                "examples": [
+                    "Equal highs/lows where retail stops cluster",
+                    "Previous day/week highs and lows",
+                    "Round numbers and psychological levels"
+                ]
+            },
+            "sweep_patterns": {
+                "description": "Common patterns when liquidity is taken",
+                "patterns": {
+                    "liquidity_grab": "Quick move to take liquidity then reverse",
+                    "stop_hunt": "Temporary move beyond level to trigger stops",
+                    "true_breakout": "Sustained move beyond level indicating trend change"
+                }
+            },
+            "session_importance": {
+                "asia": "Often sets the range for the day, liquidity at session highs/lows",
+                "london": "Major volatility expansion, targets Asian range",
+                "new_york": "Continuation or reversal of London moves, targets session liquidity"
+            }
+        },
+
+        "usage_examples": {
+            "bullish_liquidity_setup": {
+                "description": "Example of bullish liquidity targeting",
+                "indicators": [
+                    "primary_target.direction: SELL_SIDE",
+                    "recommended_bias: BULLISH_SWEEP_LIKELY",
+                    "liquidity_imbalance: SELL_SIDE_HEAVY",
+                    "Multiple untapped sell-side pools above"
+                ]
+            },
+            "bearish_liquidity_setup": {
+                "description": "Example of bearish liquidity targeting",
+                "indicators": [
+                    "primary_target.direction: BUY_SIDE",
+                    "recommended_bias: BEARISH_SWEEP_LIKELY",
+                    "liquidity_imbalance: BUY_SIDE_HEAVY",
+                    "Equal lows with HIGH sweep_probability"
+                ]
+            }
+        },
+
+        "trading_interpretation": {
+            "how_to_use": [
+                "1. Check liquidity_imbalance for overall bias direction",
+                "2. Identify primary_target for likely price destination",
+                "3. Use nearest untapped levels for short-term targets",
+                "4. Monitor session liquidity for intraday targets",
+                "5. Higher strength pools are more likely to cause reactions",
+                "6. VERY_HIGH sweep probability levels are prime targets"
+            ],
+            "risk_management": [
+                "Avoid trading into liquidity void zones",
+                "Place stops beyond strong liquidity clusters",
+                "Expect quick moves through low-strength liquidity",
+                "Be cautious of false breakouts at high-strength levels"
+            ],
+            "confluence_factors": [
+                "Multiple liquidity pools at same level increase importance",
+                "Session liquidity + timeframe levels = high probability targets",
+                "Equal highs/lows with recent formation are strongest",
+                "Untapped levels from higher timeframes take priority"
+            ]
+        }
+    }

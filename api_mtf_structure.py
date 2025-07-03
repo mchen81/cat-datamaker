@@ -1342,3 +1342,362 @@ async def get_mtf_structure(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"MTF structure analysis failed: {str(e)}")
+
+
+@router.get("/api/mtf-structure/doc",
+            summary="MTF Structure API Documentation",
+            description="Get comprehensive documentation for the Multi-Timeframe Structure API response format")
+async def get_mtf_structure_documentation():
+    """
+    Get comprehensive documentation for the Multi-Timeframe Structure API response format.
+    
+    This endpoint provides detailed explanations of all response fields, enums, and trading concepts
+    used in the MTF structure analysis API.
+    """
+    return {
+        "api_endpoint": "/api/mtf-structure/{symbol}",
+        "description": "Multi-Timeframe Structure Analysis using Smart Money Concepts across 5 key timeframes",
+        "response_format": {
+            "symbol": {
+                "type": "string",
+                "description": "Trading pair symbol (e.g., BTCUSDT)",
+                "example": "BTCUSDT"
+            },
+            "timestamp": {
+                "type": "string",
+                "description": "ISO 8601 timestamp of analysis",
+                "example": "2024-01-01T12:00:00Z"
+            },
+            "current_price": {
+                "type": "float",
+                "description": "Current price at time of analysis",
+                "example": 95000.0
+            },
+            "timeframe_analysis": {
+                "type": "object",
+                "description": "Individual analysis for each timeframe",
+                "structure": {
+                    "monthly/weekly/daily/h4/h1": {
+                        "timeframe": {
+                            "type": "string",
+                            "description": "Timeframe identifier",
+                            "possible_values": ["1M", "1W", "1D", "4H", "1H"]
+                        },
+                        "trend": {
+                            "type": "TrendDirection",
+                            "description": "Current trend direction",
+                            "possible_values": ["BULLISH", "BEARISH", "RANGING", "NEUTRAL"],
+                            "interpretation": {
+                                "BULLISH": "Upward trend with higher highs and higher lows",
+                                "BEARISH": "Downward trend with lower highs and lower lows",
+                                "RANGING": "Sideways movement within defined range",
+                                "NEUTRAL": "No clear directional bias"
+                            }
+                        },
+                        "structure_status": {
+                            "type": "StructureStatus",
+                            "description": "Current structural integrity",
+                            "possible_values": ["INTACT", "QUESTIONING", "BROKEN"],
+                            "interpretation": {
+                                "INTACT": "Structure remains valid, trend continuation likely",
+                                "QUESTIONING": "Recent CHoCH events, structure under pressure",
+                                "BROKEN": "Structure compromised, potential trend reversal"
+                            }
+                        },
+                        "last_major_move": {
+                            "type": "string",
+                            "description": "Description of last significant structural move",
+                            "examples": ["BULLISH_BOS", "BEARISH_CHoCH", "Structure analysis pending"]
+                        },
+                        "key_levels": {
+                            "type": "KeyLevels",
+                            "description": "Key price levels for this timeframe",
+                            "fields": {
+                                "major_resistance": "Major resistance level (HTF only)",
+                                "major_support": "Major support level (HTF only)",
+                                "resistance": "Standard resistance level",
+                                "support": "Standard support level",
+                                "pivot": "Pivot level between support/resistance",
+                                "range_high": "Range high (LTF only)",
+                                "range_low": "Range low (LTF only)",
+                                "current_position": {
+                                    "type": "CurrentPosition",
+                                    "possible_values": ["ABOVE_RANGE", "UPPER_RANGE", "MIDDLE_RANGE", "LOWER_RANGE",
+                                                        "BELOW_RANGE", "AT_PIVOT", "NEAR_PIVOT", "NEAR_RESISTANCE",
+                                                        "NEAR_SUPPORT", "MID_RANGE"]
+                                }
+                            }
+                        },
+                        "strength_score": {
+                            "type": "integer",
+                            "description": "Trend strength score from 1-10",
+                            "interpretation": {
+                                "1-3": "Weak trend, high probability of reversal",
+                                "4-6": "Moderate trend, neutral outlook",
+                                "7-8": "Strong trend, continuation likely",
+                                "9-10": "Very strong trend, follow momentum"
+                            }
+                        },
+                        "bias": {
+                            "type": "BiasStrength",
+                            "description": "Trading bias strength",
+                            "possible_values": ["STRONG_BULLISH", "BULLISH", "NEUTRAL_BULLISH", "NEUTRAL",
+                                                "NEUTRAL_BEARISH", "BEARISH", "STRONG_BEARISH"]
+                        },
+                        "phase": {
+                            "type": "MarketPhase",
+                            "description": "Current market phase",
+                            "possible_values": ["EXPANSION", "PULLBACK", "CONSOLIDATION", "ACCUMULATION",
+                                                "RETRACEMENT"],
+                            "interpretation": {
+                                "EXPANSION": "Strong trending phase, follow momentum",
+                                "PULLBACK": "Healthy retracement in trend",
+                                "CONSOLIDATION": "Sideways movement, wait for breakout",
+                                "ACCUMULATION": "Building phase after structure break",
+                                "RETRACEMENT": "Counter-trend movement"
+                            }
+                        },
+                        "confluence_with_monthly": "Boolean indicating confluence with monthly timeframe",
+                        "notes": "Additional observations for this timeframe",
+                        "entry_quality": {
+                            "type": "EntryQuality",
+                            "possible_values": ["EXCELLENT", "GOOD", "FAIR", "POOR"],
+                            "description": "Quality assessment for entries on this timeframe"
+                        }
+                    }
+                }
+            },
+            "mtf_alignment": {
+                "type": "MTFAlignment",
+                "description": "Multi-timeframe alignment analysis",
+                "fields": {
+                    "alignment_score": {
+                        "type": "float",
+                        "description": "Alignment score from 0-10",
+                        "interpretation": {
+                            "8-10": "Excellent alignment, high probability setups",
+                            "6-7": "Good alignment, wait for LTF confirmation",
+                            "4-5": "Moderate alignment, selective trading",
+                            "0-3": "Poor alignment, avoid trading"
+                        }
+                    },
+                    "alignment_status": {
+                        "type": "AlignmentStatus",
+                        "possible_values": ["FULL", "PARTIAL", "CONFLICTED"],
+                        "interpretation": {
+                            "FULL": "All timeframes aligned, high confidence trades",
+                            "PARTIAL": "Some alignment, trade with caution",
+                            "CONFLICTED": "Timeframes disagree, wait for clarity"
+                        }
+                    },
+                    "aligned_timeframes": "List of timeframes showing same direction",
+                    "conflicting_timeframes": "List of timeframes showing different direction",
+                    "dominant_bias": "Overall bias across all timeframes",
+                    "conflict_resolution": "How to resolve timeframe conflicts",
+                    "trading_recommendation": "Overall trading recommendation"
+                }
+            },
+            "key_level_confluence": {
+                "type": "KeyLevelConfluence",
+                "description": "Price levels where multiple timeframes converge",
+                "fields": {
+                    "major_confluence_zones": {
+                        "type": "array",
+                        "description": "Major zones where 2+ timeframes have levels",
+                        "item_structure": {
+                            "zone": "Price range [low, high]",
+                            "timeframes_present": "List of timeframes with levels in this zone",
+                            "type": "SUPPORT or RESISTANCE",
+                            "strength": "Strength score 1-10 based on number of timeframes",
+                            "description": "Description of the confluence"
+                        }
+                    },
+                    "single_tf_levels": {
+                        "type": "array",
+                        "description": "Important levels from single timeframes",
+                        "item_structure": {
+                            "level": "Exact price level",
+                            "timeframe": "Source timeframe",
+                            "importance": "HIGH, MEDIUM, or LOW importance"
+                        }
+                    }
+                }
+            },
+            "mtf_structure_summary": {
+                "type": "MTFStructureSummary",
+                "description": "High-level summary of MTF structure",
+                "fields": {
+                    "primary_trend": "Primary trend from highest timeframes",
+                    "trading_timeframe_trend": "4H trend for trade bias",
+                    "entry_timeframe_trend": "1H trend for entry timing",
+                    "structural_integrity": {
+                        "htf": "High timeframe structural integrity",
+                        "mtf": "Medium timeframe structural integrity",
+                        "ltf": "Low timeframe structural integrity",
+                        "possible_values": ["STRONG", "MODERATE", "WEAK"]
+                    },
+                    "best_trading_approach": {
+                        "type": "TradingApproach",
+                        "possible_values": ["AGGRESSIVE_TREND", "PATIENT_ACCUMULATION", "COUNTER_TREND",
+                                            "WAIT_FOR_SETUP", "NO_TRADE"],
+                        "interpretation": {
+                            "AGGRESSIVE_TREND": "Strong alignment, follow momentum aggressively",
+                            "PATIENT_ACCUMULATION": "Build positions gradually",
+                            "COUNTER_TREND": "Look for reversal opportunities",
+                            "WAIT_FOR_SETUP": "Wait for better alignment",
+                            "NO_TRADE": "Avoid trading until clarity emerges"
+                        }
+                    },
+                    "ideal_entry_scenario": "Description of best entry setup"
+                }
+            },
+            "cascade_analysis": {
+                "type": "CascadeAnalysis",
+                "description": "How trends flow from higher to lower timeframes",
+                "fields": {
+                    "monthly_to_weekly": "Monthly trend influence on weekly",
+                    "weekly_to_daily": "Weekly trend influence on daily",
+                    "daily_to_4h": "Daily trend influence on 4H",
+                    "h4_to_1h": "4H trend influence on 1H",
+                    "cascade_item_structure": {
+                        "alignment": {
+                            "type": "AlignmentType",
+                            "possible_values": ["CONFIRMED", "DIVERGING", "TRANSITIONING"],
+                            "interpretation": {
+                                "CONFIRMED": "Lower TF respecting higher TF structure",
+                                "DIVERGING": "Lower TF moving against higher TF",
+                                "TRANSITIONING": "Lower TF in transition phase"
+                            }
+                        },
+                        "weekly_respecting_monthly": "Boolean - weekly following monthly",
+                        "daily_respecting_weekly": "Boolean - daily following weekly",
+                        "potential_shift": "Boolean - potential structure shift",
+                        "watch_level": "Key level to watch for shift",
+                        "accumulation_phase": "Boolean - in accumulation phase"
+                    }
+                }
+            },
+            "trading_zones": {
+                "type": "TradingZones",
+                "description": "Recommended trading zones based on confluence",
+                "fields": {
+                    "optimal_buy_zone": {
+                        "range": "Price range for optimal buying [low, high]",
+                        "timeframe_support": "Timeframes supporting this zone",
+                        "risk_reward": "Risk/reward assessment",
+                        "entry_criteria": "Required conditions for entry"
+                    },
+                    "optimal_sell_zone": {
+                        "range": "Price range for optimal selling [low, high]",
+                        "timeframe_resistance": "Timeframes resisting at this zone",
+                        "risk_reward": "Risk/reward assessment",
+                        "entry_criteria": "Required conditions for entry"
+                    },
+                    "no_trade_zone": {
+                        "range": "Price range to avoid trading [low, high]",
+                        "reason": "Why this zone should be avoided",
+                        "risk_reward": "Risk/reward assessment",
+                        "entry_criteria": "Why no clear edge exists"
+                    }
+                }
+            },
+            "mtf_bias_matrix": {
+                "type": "MTFBiasMatrix",
+                "description": "Comprehensive bias matrix with scenarios",
+                "fields": {
+                    "current_bias": {
+                        "type": "string",
+                        "description": "Current overall bias",
+                        "possible_values": ["STRONG_BULLISH", "BULLISH_WITH_CAUTION", "NEUTRAL", "BEARISH_WITH_CAUTION",
+                                            "STRONG_BEARISH"]
+                    },
+                    "confidence": {
+                        "type": "integer",
+                        "description": "Confidence level 1-10",
+                        "interpretation": {
+                            "8-10": "High confidence, act on signals",
+                            "6-7": "Medium confidence, wait for confirmation",
+                            "4-5": "Low confidence, avoid large positions",
+                            "1-3": "Very low confidence, stay flat"
+                        }
+                    },
+                    "key_message": "Summary message of current market condition",
+                    "invalidation_scenarios": "List of scenarios that would invalidate current bias",
+                    "confirmation_scenarios": "List of scenarios that would confirm current bias"
+                }
+            },
+            "timeframe_transitions": {
+                "type": "TimeframeTransitions",
+                "description": "Upcoming decision points across timeframes",
+                "fields": {
+                    "next_htf_decision": {
+                        "timeframe": "High timeframe with next decision",
+                        "time_to_close": "Time remaining to timeframe close",
+                        "critical_level": "Key level to watch",
+                        "next_candle": "Time to next candle",
+                        "watch_for": "What to watch for"
+                    },
+                    "next_mtf_decision": "Next medium timeframe decision point",
+                    "immediate_focus": "Immediate timeframe to focus on"
+                }
+            }
+        },
+        "trading_concepts": {
+            "multi_timeframe_analysis": {
+                "description": "Analysis across multiple timeframes to identify high-probability setups",
+                "hierarchy": {
+                    "HTF (High Timeframe)": "Monthly/Weekly - Determines primary trend direction",
+                    "MTF (Medium Timeframe)": "Daily/4H - Provides trading bias",
+                    "LTF (Low Timeframe)": "1H/15M - Provides entry timing"
+                },
+                "principle": "HTF gives direction, MTF gives bias, LTF gives entry"
+            },
+            "confluence_zones": {
+                "description": "Price levels where multiple timeframes have support/resistance",
+                "significance": "Higher confluence = stronger levels = better risk/reward",
+                "usage": "Target these zones for entries and exits"
+            },
+            "cascade_analysis": {
+                "description": "How trends flow from higher to lower timeframes",
+                "principle": "Trends should cascade from HTF to LTF for best setups",
+                "divergence_meaning": "When LTF goes against HTF, often signals reversal or pullback"
+            },
+            "structural_integrity": {
+                "description": "Assessment of how well structure is holding",
+                "strong": "Structure holding well, trend continuation likely",
+                "moderate": "Some pressure but structure intact",
+                "weak": "Structure under pressure, potential reversal"
+            },
+            "alignment_scoring": {
+                "description": "Measures how well timeframes agree",
+                "calculation": "Percentage of timeframes showing same direction",
+                "usage": "Higher alignment = higher probability trades"
+            }
+        },
+        "usage_examples": {
+            "full_alignment_bullish": {
+                "scenario": "All timeframes bullish, high alignment score",
+                "approach": "AGGRESSIVE_TREND following",
+                "entry_criteria": "Any pullback to support levels",
+                "risk_management": "Tight stops, trend continuation expected"
+            },
+            "htf_bullish_ltf_bearish": {
+                "scenario": "HTF bullish but LTF showing weakness",
+                "approach": "PATIENT_ACCUMULATION",
+                "entry_criteria": "Wait for LTF structure repair",
+                "risk_management": "Wider stops, expect consolidation"
+            },
+            "conflicted_timeframes": {
+                "scenario": "Timeframes showing different directions",
+                "approach": "NO_TRADE or WAIT_FOR_SETUP",
+                "entry_criteria": "Wait for alignment to improve",
+                "risk_management": "Avoid trading until clarity emerges"
+            }
+        },
+        "risk_management": {
+            "high_alignment": "Smaller stops, larger position sizes",
+            "medium_alignment": "Normal stops, normal position sizes",
+            "low_alignment": "Wider stops, smaller position sizes",
+            "conflicted": "Avoid trading or very small positions"
+        }
+    }

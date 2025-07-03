@@ -918,3 +918,565 @@ async def get_trade_signal(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Trade signal generation failed: {str(e)}")
+
+
+@router.get("/api/trade-signal/doc",
+            summary="Trade Signal API Documentation",
+            description="Get comprehensive documentation for the Trade Signal API response format")
+async def get_trade_signal_documentation():
+    """
+    Get comprehensive documentation for the Trade Signal API response format.
+    
+    This endpoint provides detailed explanations of all response fields, enums, and trading concepts
+    used in the comprehensive trade signal generation API.
+    """
+    return {
+        "api_endpoint": "/api/trade-signal/{symbol}/{timeframe}",
+        "description": "Comprehensive Trade Signal Generation combining Technical Analysis and Smart Money Concepts",
+        "response_format": {
+            "symbol": {
+                "type": "string",
+                "description": "Trading pair symbol (e.g., BTCUSDT)",
+                "example": "BTCUSDT"
+            },
+            "timeframe": {
+                "type": "string",
+                "description": "Analysis timeframe",
+                "possible_values": ["1m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w",
+                                    "1M"],
+                "example": "4h"
+            },
+            "timestamp": {
+                "type": "string",
+                "description": "Signal generation timestamp",
+                "example": "2024-01-01T12:00:00Z"
+            },
+            "current_price": {
+                "type": "float",
+                "description": "Current market price at time of analysis",
+                "example": 95000.0
+            },
+            "signal_direction": {
+                "type": "SignalDirection",
+                "description": "Primary trading signal direction",
+                "possible_values": ["STRONG_BUY", "BUY", "WEAK_BUY", "NEUTRAL", "WEAK_SELL", "SELL", "STRONG_SELL"],
+                "interpretation": {
+                    "STRONG_BUY": "Very high confidence bullish signal, strong buy recommendation",
+                    "BUY": "High confidence bullish signal, buy recommendation",
+                    "WEAK_BUY": "Moderate confidence bullish signal, weak buy recommendation",
+                    "NEUTRAL": "No clear directional bias, wait for better signals",
+                    "WEAK_SELL": "Moderate confidence bearish signal, weak sell recommendation",
+                    "SELL": "High confidence bearish signal, sell recommendation",
+                    "STRONG_SELL": "Very high confidence bearish signal, strong sell recommendation"
+                }
+            },
+            "signal_strength": {
+                "type": "SignalStrength",
+                "description": "Overall signal quality assessment",
+                "possible_values": ["VERY_STRONG", "STRONG", "MODERATE", "WEAK", "VERY_WEAK"],
+                "interpretation": {
+                    "VERY_STRONG": "Exceptional signal quality, act with high confidence",
+                    "STRONG": "High quality signal, good trading opportunity",
+                    "MODERATE": "Decent signal quality, trade with caution",
+                    "WEAK": "Low quality signal, avoid large positions",
+                    "VERY_WEAK": "Very poor signal quality, avoid trading"
+                }
+            },
+            "confidence_level": {
+                "type": "ConfidenceLevel",
+                "description": "Confidence in the generated signal",
+                "possible_values": ["VERY_HIGH", "HIGH", "MEDIUM", "LOW", "VERY_LOW"],
+                "interpretation": {
+                    "VERY_HIGH": "90-100% confidence, execute with full conviction",
+                    "HIGH": "75-89% confidence, good execution opportunity",
+                    "MEDIUM": "50-74% confidence, proceed with caution",
+                    "LOW": "25-49% confidence, avoid or use small position",
+                    "VERY_LOW": "0-24% confidence, do not trade"
+                }
+            },
+            "recommended_action": {
+                "type": "TradingAction",
+                "description": "Specific trading action recommendation",
+                "possible_values": ["ENTER_LONG", "ENTER_SHORT", "HOLD_LONG", "HOLD_SHORT", "EXIT_LONG", "EXIT_SHORT",
+                                    "WAIT"],
+                "interpretation": {
+                    "ENTER_LONG": "Initiate new long position",
+                    "ENTER_SHORT": "Initiate new short position",
+                    "HOLD_LONG": "Maintain existing long position",
+                    "HOLD_SHORT": "Maintain existing short position",
+                    "EXIT_LONG": "Close long position",
+                    "EXIT_SHORT": "Close short position",
+                    "WAIT": "No action recommended, wait for better opportunity"
+                }
+            },
+            "technical_signal": {
+                "type": "TechnicalSignal",
+                "description": "Traditional technical analysis signals breakdown",
+                "fields": {
+                    "rsi_signal": {
+                        "type": "float",
+                        "description": "RSI signal contribution",
+                        "range": "-2.0 to +2.0",
+                        "interpretation": {
+                            "+2.0": "Strong oversold condition, buy signal",
+                            "+1.0": "Oversold condition, weak buy signal",
+                            "0.0": "Neutral RSI condition",
+                            "-1.0": "Overbought condition, weak sell signal",
+                            "-2.0": "Strong overbought condition, sell signal"
+                        }
+                    },
+                    "macd_signal": {
+                        "type": "float",
+                        "description": "MACD signal contribution",
+                        "range": "-1.5 to +1.5",
+                        "interpretation": {
+                            "+1.5": "Strong bullish MACD signal",
+                            "+1.0": "Bullish MACD signal",
+                            "0.0": "Neutral MACD",
+                            "-1.0": "Bearish MACD signal",
+                            "-1.5": "Strong bearish MACD signal"
+                        }
+                    },
+                    "ma_signal": {
+                        "type": "float",
+                        "description": "Moving average signal contribution",
+                        "range": "-2.0 to +2.0",
+                        "interpretation": {
+                            "+2.0": "Price above both MAs, strong uptrend",
+                            "+1.0": "Price above short MA, uptrend",
+                            "0.0": "Neutral MA alignment",
+                            "-1.0": "Price below short MA, downtrend",
+                            "-2.0": "Price below both MAs, strong downtrend"
+                        }
+                    },
+                    "volume_signal": {
+                        "type": "float",
+                        "description": "Volume signal contribution",
+                        "range": "-1.0 to +1.0",
+                        "interpretation": {
+                            "+1.0": "High volume confirming move",
+                            "0.0": "Normal volume",
+                            "-1.0": "Low volume, weak conviction"
+                        }
+                    },
+                    "volatility_signal": {
+                        "type": "float",
+                        "description": "Volatility signal contribution",
+                        "range": "-0.5 to +0.5",
+                        "interpretation": {
+                            "+0.5": "Low volatility, favorable conditions",
+                            "0.0": "Normal volatility",
+                            "-0.5": "High volatility, unfavorable conditions"
+                        }
+                    },
+                    "combined_score": {
+                        "type": "float",
+                        "description": "Weighted combination of all technical signals",
+                        "calculation": "rsi_signal*0.25 + macd_signal*0.25 + ma_signal*0.25 + volume_signal*0.15 + volatility_signal*0.10"
+                    }
+                }
+            },
+            "smc_signal": {
+                "type": "SMCSignal",
+                "description": "Smart Money Concepts analysis signals breakdown",
+                "fields": {
+                    "market_structure_signal": {
+                        "type": "float",
+                        "description": "Market structure analysis signal",
+                        "range": "-1.5 to +1.5",
+                        "interpretation": {
+                            "+1.5": "Strong bullish structure (HH, HL pattern)",
+                            "0.0": "Neutral structure",
+                            "-1.5": "Strong bearish structure (LH, LL pattern)"
+                        }
+                    },
+                    "liquidity_signal": {
+                        "type": "float",
+                        "description": "Liquidity environment signal",
+                        "range": "-0.5 to +1.0",
+                        "interpretation": {
+                            "+1.0": "High liquidity environment, favorable for large moves",
+                            "0.0": "Normal liquidity",
+                            "-0.5": "Low liquidity, unfavorable conditions"
+                        }
+                    },
+                    "supply_demand_signal": {
+                        "type": "float",
+                        "description": "Supply and demand balance signal",
+                        "range": "-1.0 to +1.0",
+                        "interpretation": {
+                            "+1.0": "Strong demand, bullish pressure",
+                            "0.0": "Balanced supply/demand",
+                            "-1.0": "Strong supply, bearish pressure"
+                        }
+                    },
+                    "order_block_signal": {
+                        "type": "float",
+                        "description": "Order block presence signal",
+                        "range": "0.0 to +0.5",
+                        "interpretation": {
+                            "+0.5": "Strong order block detected",
+                            "0.0": "No significant order blocks"
+                        }
+                    },
+                    "fair_value_gap_signal": {
+                        "type": "float",
+                        "description": "Fair value gap analysis signal",
+                        "range": "-1.0 to +1.0",
+                        "interpretation": {
+                            "+1.0": "Bullish fair value gaps dominating",
+                            "0.0": "No significant FVGs",
+                            "-1.0": "Bearish fair value gaps dominating"
+                        }
+                    },
+                    "combined_score": {
+                        "type": "float",
+                        "description": "Weighted combination of all SMC signals",
+                        "calculation": "structure*0.25 + liquidity*0.20 + supply_demand*0.25 + order_block*0.15 + fvg*0.15"
+                    }
+                }
+            },
+            "signal_components": {
+                "type": "array",
+                "description": "Individual signal components with their contributions",
+                "item_structure": {
+                    "name": "Component name (RSI, MACD, Market Structure, etc.)",
+                    "value": "Raw signal value",
+                    "weight": "Weight in final signal calculation",
+                    "contribution": "Actual contribution to final signal",
+                    "status": "Component status description"
+                }
+            },
+            "risk_metrics": {
+                "type": "RiskMetrics",
+                "description": "Comprehensive risk assessment for the trade",
+                "fields": {
+                    "risk_level": {
+                        "type": "RiskLevel",
+                        "possible_values": ["LOW", "MEDIUM", "HIGH", "VERY_HIGH"],
+                        "interpretation": {
+                            "LOW": "Conservative trade setup, minimal risk",
+                            "MEDIUM": "Moderate risk trade, standard management",
+                            "HIGH": "High risk trade, careful management required",
+                            "VERY_HIGH": "Extremely risky, avoid or use tiny position"
+                        }
+                    },
+                    "volatility_risk": {
+                        "type": "float",
+                        "description": "Risk from price volatility",
+                        "range": "0.0 to 1.0",
+                        "interpretation": {
+                            "0.0-0.3": "Low volatility risk",
+                            "0.3-0.6": "Moderate volatility risk",
+                            "0.6-0.8": "High volatility risk",
+                            "0.8-1.0": "Very high volatility risk"
+                        }
+                    },
+                    "liquidity_risk": {
+                        "type": "float",
+                        "description": "Risk from liquidity conditions",
+                        "range": "0.0 to 1.0",
+                        "calculation": "Based on volume relative to average"
+                    },
+                    "market_risk": {
+                        "type": "float",
+                        "description": "Risk from market conditions",
+                        "range": "0.0 to 1.0",
+                        "calculation": "Based on signal strength and market volatility"
+                    },
+                    "suggested_position_size": {
+                        "type": "float",
+                        "description": "Recommended position size as percentage of portfolio",
+                        "range": "0.005 to 0.02",
+                        "calculation": "Base 2% adjusted by risk factors"
+                    },
+                    "max_drawdown_estimate": {
+                        "type": "float",
+                        "description": "Estimated maximum drawdown percentage",
+                        "calculation": "Based on historical volatility"
+                    }
+                }
+            },
+            "entry_exit_levels": {
+                "type": "EntryExitLevels",
+                "description": "Precise entry and exit price levels",
+                "fields": {
+                    "entry_price": {
+                        "type": "float",
+                        "description": "Recommended entry price level",
+                        "note": "Usually current market price"
+                    },
+                    "stop_loss": {
+                        "type": "float",
+                        "description": "Stop loss level for risk management",
+                        "calculation": "Entry ± (2 * ATR)"
+                    },
+                    "take_profit_1": {
+                        "type": "float",
+                        "description": "First take profit level",
+                        "calculation": "Entry ± (1.5 * ATR)"
+                    },
+                    "take_profit_2": {
+                        "type": "float",
+                        "description": "Second take profit level",
+                        "calculation": "Entry ± (3 * ATR)"
+                    },
+                    "take_profit_3": {
+                        "type": "float",
+                        "description": "Third take profit level (optional)",
+                        "calculation": "Entry ± (4.5 * ATR)"
+                    },
+                    "risk_reward_ratio": {
+                        "type": "float",
+                        "description": "Risk to reward ratio for the trade",
+                        "calculation": "(take_profit_1 - entry) / (entry - stop_loss)",
+                        "interpretation": {
+                            "< 1.0": "Poor risk/reward, avoid trade",
+                            "1.0-2.0": "Acceptable risk/reward",
+                            "2.0-3.0": "Good risk/reward",
+                            "> 3.0": "Excellent risk/reward"
+                        }
+                    }
+                }
+            },
+            "market_context": {
+                "type": "MarketContext",
+                "description": "Current market environment analysis",
+                "fields": {
+                    "current_condition": {
+                        "type": "MarketCondition",
+                        "possible_values": ["TRENDING_UP", "TRENDING_DOWN", "RANGING", "VOLATILE", "BREAKOUT",
+                                            "REVERSAL"],
+                        "interpretation": {
+                            "TRENDING_UP": "Clear upward trend, follow momentum",
+                            "TRENDING_DOWN": "Clear downward trend, follow momentum",
+                            "RANGING": "Sideways movement, use mean reversion",
+                            "VOLATILE": "High volatility, adjust position sizes",
+                            "BREAKOUT": "Breaking out of range, momentum opportunity",
+                            "REVERSAL": "Trend reversal in progress"
+                        }
+                    },
+                    "trend_direction": {
+                        "type": "string",
+                        "possible_values": ["BULLISH", "BEARISH", "NEUTRAL"],
+                        "description": "Primary trend direction"
+                    },
+                    "trend_strength": {
+                        "type": "float",
+                        "description": "Strength of current trend",
+                        "range": "0.0 to 1.0",
+                        "interpretation": {
+                            "0.8-1.0": "Very strong trend",
+                            "0.6-0.8": "Strong trend",
+                            "0.4-0.6": "Moderate trend",
+                            "0.2-0.4": "Weak trend",
+                            "0.0-0.2": "No clear trend"
+                        }
+                    },
+                    "support_level": {
+                        "type": "float",
+                        "description": "Key support price level",
+                        "calculation": "20-period rolling minimum"
+                    },
+                    "resistance_level": {
+                        "type": "float",
+                        "description": "Key resistance price level",
+                        "calculation": "20-period rolling maximum"
+                    },
+                    "consolidation_range": {
+                        "type": "object",
+                        "description": "Price range if market is consolidating",
+                        "fields": {
+                            "low": "Lower bound of consolidation",
+                            "high": "Upper bound of consolidation"
+                        }
+                    }
+                }
+            },
+            "signal_validation": {
+                "type": "SignalValidation",
+                "description": "Signal confirmation and validation data",
+                "fields": {
+                    "signal_confirmed": {
+                        "type": "boolean",
+                        "description": "Whether the signal is confirmed by multiple factors",
+                        "interpretation": {
+                            "true": "Signal has multiple confirmations, higher reliability",
+                            "false": "Signal lacks confirmation, lower reliability"
+                        }
+                    },
+                    "confirmation_factors": {
+                        "type": "array",
+                        "description": "List of factors supporting the signal",
+                        "examples": ["Technical and SMC signals aligned", "Strong trending market",
+                                     "High volume confirmation"]
+                    },
+                    "warning_factors": {
+                        "type": "array",
+                        "description": "List of warning factors against the signal",
+                        "examples": ["Technical and SMC signals diverging", "Weak or ranging market",
+                                     "Low volume environment"]
+                    },
+                    "time_horizon": {
+                        "type": "string",
+                        "description": "Recommended time horizon for the signal",
+                        "possible_values": ["1-3 days", "3-7 days", "1-2 weeks"],
+                        "calculation": "Based on signal strength and market volatility"
+                    },
+                    "invalidation_level": {
+                        "type": "float",
+                        "description": "Price level that would invalidate the signal",
+                        "usage": "If price reaches this level, exit the trade"
+                    }
+                }
+            },
+            "key_message": {
+                "type": "string",
+                "description": "Main takeaway message summarizing the signal",
+                "examples": [
+                    "Strong bullish signal detected with VERY_HIGH confidence",
+                    "Strong bearish signal detected with HIGH confidence",
+                    "Neutral market conditions, wait for clearer signals"
+                ]
+            },
+            "execution_notes": {
+                "type": "string",
+                "description": "Detailed execution guidance and considerations",
+                "examples": [
+                    "Consider entering long position with proper risk management",
+                    "Consider entering short position with proper risk management",
+                    "Monitor for better entry opportunities"
+                ]
+            }
+        },
+        "signal_generation_methodology": {
+            "description": "How the comprehensive trade signal is calculated",
+            "steps": [
+                "1. Fetch OHLCV data from Binance API",
+                "2. Calculate technical indicators (RSI, MACD, MA, Volume, Volatility)",
+                "3. Calculate Smart Money Concepts signals (Structure, Liquidity, Supply/Demand, Order Blocks, FVGs)",
+                "4. Combine technical and SMC scores with equal weighting",
+                "5. Determine signal direction and strength based on combined score",
+                "6. Calculate risk metrics and position sizing",
+                "7. Generate entry/exit levels using ATR-based calculations",
+                "8. Analyze market context and validate signal",
+                "9. Provide actionable recommendations"
+            ],
+            "weighting_scheme": {
+                "technical_indicators": {
+                    "rsi": "25%",
+                    "macd": "25%",
+                    "moving_averages": "25%",
+                    "volume": "15%",
+                    "volatility": "10%"
+                },
+                "smc_indicators": {
+                    "market_structure": "25%",
+                    "supply_demand": "25%",
+                    "liquidity": "20%",
+                    "order_blocks": "15%",
+                    "fair_value_gaps": "15%"
+                },
+                "final_signal": {
+                    "technical_score": "50%",
+                    "smc_score": "50%"
+                }
+            }
+        },
+        "trading_concepts": {
+            "signal_strength_mapping": {
+                "description": "How combined scores map to signal directions",
+                "score_ranges": {
+                    "≥ 1.5": "STRONG_BUY (VERY_STRONG confidence)",
+                    "1.0 to 1.5": "BUY (STRONG confidence)",
+                    "0.5 to 1.0": "WEAK_BUY (MODERATE confidence)",
+                    "-0.5 to 0.5": "NEUTRAL (WEAK confidence)",
+                    "-1.0 to -0.5": "WEAK_SELL (MODERATE confidence)",
+                    "-1.5 to -1.0": "SELL (STRONG confidence)",
+                    "≤ -1.5": "STRONG_SELL (VERY_STRONG confidence)"
+                }
+            },
+            "risk_management": {
+                "description": "Built-in risk management principles",
+                "position_sizing": "Base 2% of portfolio adjusted by risk factors",
+                "stop_loss": "2x ATR from entry price",
+                "take_profits": "1.5x, 3x, and 4.5x ATR from entry",
+                "risk_factors": ["Volatility risk", "Liquidity risk", "Market risk"],
+                "max_position": "2% of portfolio even for strongest signals"
+            },
+            "signal_validation": {
+                "description": "Multi-factor signal validation process",
+                "confirmation_criteria": [
+                    "Technical and SMC alignment",
+                    "Strong market trend",
+                    "High volume confirmation",
+                    "Multiple timeframe agreement"
+                ],
+                "warning_flags": [
+                    "Diverging signals",
+                    "Weak market conditions",
+                    "Low volume environment",
+                    "High volatility periods"
+                ]
+            },
+            "smart_money_concepts": {
+                "market_structure": "Analysis of swing highs/lows for trend determination",
+                "liquidity_zones": "Areas where institutional orders are likely placed",
+                "supply_demand": "Balance between buying and selling pressure",
+                "order_blocks": "Price levels where large institutional orders were placed",
+                "fair_value_gaps": "Price gaps that indicate institutional activity"
+            }
+        },
+        "usage_examples": {
+            "strong_bullish_signal": {
+                "scenario": "STRONG_BUY signal with VERY_HIGH confidence",
+                "signal_components": {
+                    "technical_score": "+1.2 (RSI oversold, MACD bullish cross, price above MAs)",
+                    "smc_score": "+1.3 (Bullish structure break, demand zone test, liquidity sweep)"
+                },
+                "combined_score": "+1.25",
+                "recommended_action": "ENTER_LONG",
+                "risk_management": "2% position size, 2x ATR stop loss",
+                "execution": "Enter immediately with full position size"
+            },
+            "moderate_bearish_signal": {
+                "scenario": "WEAK_SELL signal with MEDIUM confidence",
+                "signal_components": {
+                    "technical_score": "-0.6 (RSI bearish, MACD declining, volume weak)",
+                    "smc_score": "-0.8 (Bearish structure, supply zone, order block resistance)"
+                },
+                "combined_score": "-0.7",
+                "recommended_action": "HOLD_SHORT or small short position",
+                "risk_management": "1% position size, wider stops",
+                "execution": "Wait for better confirmation or use smaller size"
+            },
+            "neutral_market": {
+                "scenario": "NEUTRAL signal with LOW confidence",
+                "signal_components": {
+                    "technical_score": "+0.1 (Mixed technical signals)",
+                    "smc_score": "-0.2 (Ranging market structure)"
+                },
+                "combined_score": "-0.05",
+                "recommended_action": "WAIT",
+                "risk_management": "No position recommended",
+                "execution": "Monitor for clearer directional signals"
+            }
+        },
+        "integration_benefits": {
+            "comprehensive_analysis": "Combines traditional TA with modern SMC concepts",
+            "risk_awareness": "Built-in risk assessment and position sizing",
+            "actionable_signals": "Clear buy/sell/wait recommendations",
+            "level_precision": "Exact entry, stop, and target levels",
+            "market_context": "Understanding of current market environment",
+            "signal_validation": "Multiple confirmation factors",
+            "time_horizon": "Appropriate holding period guidance"
+        },
+        "limitations_and_warnings": {
+            "market_conditions": "Signals may be less reliable in highly volatile or news-driven markets",
+            "timeframe_dependency": "Signal quality varies by timeframe - higher timeframes generally more reliable",
+            "confirmation_importance": "Always wait for signal confirmation before executing trades",
+            "risk_management": "Never risk more than suggested position size regardless of signal strength",
+            "stop_loss_discipline": "Always use stop losses and honor them",
+            "continuous_monitoring": "Monitor positions and adjust based on new signals"
+        }
+    }

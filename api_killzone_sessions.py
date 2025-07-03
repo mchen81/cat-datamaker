@@ -1276,3 +1276,396 @@ async def get_killzone_sessions(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Killzone sessions analysis failed: {str(e)}")
+
+
+@router.get("/api/killzone-sessions/doc",
+            summary="Killzone Sessions API Documentation",
+            description="Get comprehensive documentation for the Killzone Sessions API response format")
+async def get_killzone_sessions_documentation():
+    """
+    Get detailed documentation for the Killzone Sessions API response format.
+    
+    This endpoint explains all fields, enums, and data structures returned by the
+    /api/killzone-sessions/{symbol}/{timeframe} endpoint.
+    """
+    return {
+        "api_endpoint": "/api/killzone-sessions/{symbol}/{timeframe}",
+        "description": "Analyzes killzone sessions using ICT (Inner Circle Trader) concepts including Power of 3 methodology, session analysis, and institutional manipulation detection.",
+
+        "ict_concepts": {
+            "power_of_3": "Three-phase daily cycle: Accumulation (Asia) → Manipulation (London) → Distribution (NY)",
+            "killzones": "High-probability time windows when institutions are most active",
+            "manipulation": "Institutional stop hunts and false breakouts to create optimal entry conditions",
+            "session_dynamics": "How different global sessions create distinct price behavior patterns"
+        },
+
+        "session_timing": {
+            "asia_session": {
+                "primary": "00:00-08:00 UTC",
+                "killzone": "08:00-12:00 UTC",
+                "characteristics": "Accumulation, range building, lower volatility"
+            },
+            "london_session": {
+                "primary": "08:00-16:00 UTC",
+                "killzone": "07:00-10:00 UTC",
+                "characteristics": "Manipulation, volatility expansion, stop hunts"
+            },
+            "new_york_session": {
+                "primary": "13:00-21:00 UTC",
+                "killzone": "12:00-15:00 UTC",
+                "characteristics": "Distribution, trend following, institutional execution"
+            },
+            "london_ny_overlap": {
+                "time": "13:00-16:00 UTC",
+                "characteristics": "Highest volume and volatility period"
+            }
+        },
+
+        "current_session": {
+            "type": "enum",
+            "description": "Currently active trading session",
+            "possible_values": {
+                "ASIA": "Asian session active (00:00-08:00 UTC)",
+                "LONDON": "London session active (08:00-16:00 UTC)",
+                "NEW_YORK": "New York session active (13:00-21:00 UTC)",
+                "OVERLAP": "London-NY overlap active (13:00-16:00 UTC)",
+                "CLOSED": "No major session active"
+            }
+        },
+
+        "session_data": {
+            "description": "Detailed analysis of each trading session",
+            "structure": "Dictionary with session keys (asia, london, new_york)",
+            "fields": {
+                "session_high": {
+                    "type": "number",
+                    "description": "Highest price during session",
+                    "example": 45200.0
+                },
+                "session_low": {
+                    "type": "number",
+                    "description": "Lowest price during session",
+                    "example": 44100.0
+                },
+                "session_range": {
+                    "type": "number",
+                    "description": "Session range in price points",
+                    "example": 1100.0
+                },
+                "opening_price": {
+                    "type": "number",
+                    "description": "Session opening price",
+                    "example": 44650.0
+                },
+                "direction": {
+                    "type": "enum",
+                    "description": "Overall session direction",
+                    "possible_values": {
+                        "BULLISH": "Session closed higher than it opened",
+                        "BEARISH": "Session closed lower than it opened",
+                        "NEUTRAL": "Session closed near opening level"
+                    }
+                },
+                "high_time": {
+                    "type": "string",
+                    "description": "Time when session high was made",
+                    "example": "14:30",
+                    "format": "HH:MM"
+                },
+                "low_time": {
+                    "type": "string",
+                    "description": "Time when session low was made",
+                    "example": "09:15",
+                    "format": "HH:MM"
+                },
+                "volume_profile": {
+                    "type": "enum",
+                    "description": "Session volume profile",
+                    "possible_values": {
+                        "VERY_HIGH": "Exceptional volume, strong institutional interest",
+                        "HIGH": "Above average volume",
+                        "MODERATE": "Average volume levels",
+                        "LOW": "Below average volume",
+                        "VERY_LOW": "Minimal volume, limited interest"
+                    }
+                },
+                "range_characteristic": {
+                    "type": "enum",
+                    "description": "Session range behavior",
+                    "possible_values": {
+                        "TIGHT": "Small range, accumulation/consolidation",
+                        "NORMAL": "Average range for session",
+                        "EXPANSION": "Large range, volatility expansion",
+                        "TRENDING": "Sustained directional movement"
+                    }
+                },
+                "liquidity_taken": {
+                    "type": "enum",
+                    "description": "Which liquidity was swept during session",
+                    "possible_values": {
+                        "NONE": "No major liquidity swept",
+                        "ASIA_HIGH": "Asian session high was taken",
+                        "ASIA_LOW": "Asian session low was taken",
+                        "LONDON_HIGH": "London session high was taken",
+                        "LONDON_LOW": "London session low was taken"
+                    }
+                },
+                "manipulation_detected": {
+                    "type": "boolean",
+                    "description": "Whether manipulation patterns were detected",
+                    "interpretation": {
+                        "true": "Stop hunt or false breakout detected",
+                        "false": "No clear manipulation identified"
+                    }
+                },
+                "manipulation_type": {
+                    "type": "enum",
+                    "description": "Type of manipulation detected",
+                    "possible_values": {
+                        "STOP_HUNT_HIGH": "Stop hunt above recent highs",
+                        "STOP_HUNT_LOW": "Stop hunt below recent lows",
+                        "BEAR_TRAP": "False breakdown followed by reversal",
+                        "BULL_TRAP": "False breakout followed by reversal"
+                    }
+                }
+            }
+        },
+
+        "killzone_analysis": {
+            "description": "Analysis of ICT killzone time windows",
+            "structure": "Dictionary with killzone keys",
+            "killzone_types": {
+                "asian_killzone": "08:00-12:00 UTC - Accumulation phase",
+                "london_killzone": "07:00-10:00 UTC - Manipulation phase",
+                "ny_killzone": "12:00-15:00 UTC - Distribution phase"
+            },
+            "fields": {
+                "time_window": {
+                    "type": "string",
+                    "description": "Killzone time window",
+                    "example": "07:00-10:00 UTC"
+                },
+                "high": {
+                    "type": "number",
+                    "description": "Killzone high price",
+                    "example": 45100.0
+                },
+                "low": {
+                    "type": "number",
+                    "description": "Killzone low price",
+                    "example": 44800.0
+                },
+                "range": {
+                    "type": "number",
+                    "description": "Killzone range in price points",
+                    "example": 300.0
+                },
+                "type": {
+                    "type": "enum",
+                    "description": "Killzone behavior type",
+                    "possible_values": {
+                        "ACCUMULATION": "Range building, institutional accumulation",
+                        "MANIPULATION": "Stop hunts, false breakouts",
+                        "DISTRIBUTION": "Trend following, institutional distribution"
+                    }
+                },
+                "key_levels_formed": {
+                    "type": "array[number]",
+                    "description": "Important levels formed during killzone",
+                    "example": [44850, 45050]
+                },
+                "false_breakout": {
+                    "type": "boolean",
+                    "description": "Whether false breakout occurred",
+                    "note": "Common during manipulation killzones"
+                },
+                "sweep_direction": {
+                    "type": "string",
+                    "description": "Direction of liquidity sweep",
+                    "possible_values": ["UPWARD", "DOWNWARD", "BOTH", "NONE"]
+                },
+                "trend_continuation": {
+                    "type": "boolean",
+                    "description": "Whether trend continued through killzone"
+                },
+                "recommendation": {
+                    "type": "string",
+                    "description": "Trading recommendation for killzone",
+                    "examples": [
+                        "Wait for manipulation completion before entry",
+                        "Look for distribution continuation",
+                        "Watch for accumulation breakout"
+                    ]
+                }
+            }
+        },
+
+        "power_of_3": {
+            "description": "ICT Power of 3 daily cycle analysis",
+            "concept": "Three-phase institutional daily cycle",
+            "fields": {
+                "current_phase": {
+                    "type": "string",
+                    "description": "Current phase in Power of 3 cycle",
+                    "possible_values": {
+                        "ACCUMULATION": "Asia session - institutional position building",
+                        "MANIPULATION": "London session - stop hunts and false moves",
+                        "DISTRIBUTION": "NY session - institutional order execution"
+                    }
+                },
+                "accumulation": {
+                    "type": "object",
+                    "description": "Accumulation phase analysis (Asia session)",
+                    "fields": {
+                        "session": "Session identifier (ASIA)",
+                        "range": "Price range for accumulation [low, high]",
+                        "completed": "Whether accumulation phase is complete"
+                    }
+                },
+                "manipulation": {
+                    "type": "object",
+                    "description": "Manipulation phase analysis (London session)",
+                    "fields": {
+                        "session": "Session identifier (LONDON)",
+                        "sweep_level": "Price level where liquidity was swept",
+                        "direction": "Manipulation direction (BEAR_TRAP/BULL_TRAP)",
+                        "completed": "Whether manipulation phase is complete"
+                    }
+                },
+                "distribution": {
+                    "type": "object",
+                    "description": "Distribution phase analysis (NY session)",
+                    "fields": {
+                        "session": "Session identifier (NEW_YORK)",
+                        "trend_direction": "Distribution trend (BULLISH/BEARISH)",
+                        "target": "Price target for distribution",
+                        "completed": "Whether distribution phase is complete",
+                        "in_progress": "Whether distribution is currently active"
+                    }
+                },
+                "po3_confidence": {
+                    "type": "number",
+                    "description": "Confidence score for Power of 3 pattern",
+                    "range": "0-10",
+                    "interpretation": {
+                        "8-10": "Very clear Power of 3 pattern",
+                        "6-8": "Good Power of 3 pattern",
+                        "4-6": "Moderate pattern clarity",
+                        "0-4": "Weak or unclear pattern"
+                    }
+                },
+                "pattern_clarity": {
+                    "type": "enum",
+                    "description": "Overall pattern clarity assessment",
+                    "possible_values": {
+                        "HIGH": "Very clear three-phase pattern",
+                        "MEDIUM": "Moderately clear pattern",
+                        "LOW": "Unclear or incomplete pattern"
+                    }
+                }
+            }
+        },
+
+        "trading_recommendations": {
+            "description": "Session-based trading recommendations",
+            "fields": {
+                "current_opportunity": {
+                    "type": "string",
+                    "description": "Current trading opportunity",
+                    "possible_values": {
+                        "NEW_YORK_CONTINUATION": "NY session trend continuation",
+                        "NEW_YORK_DISTRIBUTION": "NY distribution phase trade",
+                        "POST_MANIPULATION_LONG": "Long after manipulation sweep",
+                        "POST_MANIPULATION_SHORT": "Short after manipulation sweep",
+                        "WAIT_FOR_SETUP": "No clear opportunity, wait"
+                    }
+                },
+                "entry_zone": {
+                    "type": "array[number]",
+                    "description": "Suggested entry price range [low, high]",
+                    "example": [44900, 45100]
+                },
+                "stop_loss": {
+                    "type": "number",
+                    "description": "Suggested stop loss level",
+                    "example": 44700
+                },
+                "targets": {
+                    "type": "array[number]",
+                    "description": "Take profit targets in order",
+                    "example": [45300, 45600, 45900]
+                },
+                "session_bias": {
+                    "type": "object",
+                    "description": "Current session bias and key message",
+                    "fields": {
+                        "intraday": {
+                            "type": "string",
+                            "possible_values": ["BULLISH", "BEARISH", "NEUTRAL"]
+                        },
+                        "key_message": {
+                            "type": "string",
+                            "description": "Key trading message for current session"
+                        }
+                    }
+                },
+                "next_key_time": {
+                    "type": "string",
+                    "description": "Next important time event",
+                    "example": "13:00 UTC"
+                },
+                "next_event": {
+                    "type": "string",
+                    "description": "Description of next key event",
+                    "example": "NY Session Open"
+                }
+            }
+        },
+
+        "trading_interpretation": {
+            "power_of_3_usage": [
+                "1. Accumulation (Asia): Look for range formation and position building",
+                "2. Manipulation (London): Watch for stop hunts and false breakouts",
+                "3. Distribution (NY): Follow institutional trend direction",
+                "4. Use po3_confidence >7 for higher probability trades"
+            ],
+            "killzone_strategies": [
+                "Asian Killzone: Trade range boundaries, prepare for London expansion",
+                "London Killzone: Fade false breakouts, follow post-manipulation direction",
+                "NY Killzone: Trade trend continuation, target session objectives"
+            ],
+            "manipulation_signals": [
+                "manipulation_detected: true indicates stop hunt opportunity",
+                "BEAR_TRAP/BULL_TRAP suggest reversal after manipulation",
+                "High volume + false breakout = manipulation confirmation"
+            ],
+            "session_overlap_importance": [
+                "London-NY overlap (13:00-16:00) has highest volume",
+                "Most significant moves often occur during overlap",
+                "Watch for volatility spikes and directional bias"
+            ]
+        },
+
+        "usage_examples": {
+            "bullish_po3_setup": {
+                "description": "Example bullish Power of 3 setup",
+                "indicators": [
+                    "current_phase: DISTRIBUTION",
+                    "distribution.trend_direction: BULLISH",
+                    "manipulation.direction: BEAR_TRAP (liquidity grab below)",
+                    "po3_confidence: 8+",
+                    "current_opportunity: POST_MANIPULATION_LONG"
+                ]
+            },
+            "bearish_po3_setup": {
+                "description": "Example bearish Power of 3 setup",
+                "indicators": [
+                    "current_phase: DISTRIBUTION",
+                    "distribution.trend_direction: BEARISH",
+                    "manipulation.direction: BULL_TRAP (liquidity grab above)",
+                    "pattern_clarity: HIGH",
+                    "current_opportunity: POST_MANIPULATION_SHORT"
+                ]
+            }
+        }
+    }

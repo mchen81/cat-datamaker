@@ -1139,3 +1139,382 @@ async def get_supply_demand_zones(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Supply demand zones analysis failed: {str(e)}")
+
+
+@router.get("/api/supply-demand-zones/doc",
+            summary="Supply Demand Zones API Documentation",
+            description="Get comprehensive documentation for the Supply Demand Zones API response format")
+async def get_supply_demand_zones_documentation():
+    """
+    Get detailed documentation for the Supply Demand Zones API response format.
+    
+    This endpoint explains all fields, enums, and data structures returned by the
+    /api/supply-demand-zones/{symbol}/{timeframe} endpoint.
+    """
+    return {
+        "api_endpoint": "/api/supply-demand-zones/{symbol}/{timeframe}",
+        "description": "Analyzes supply and demand zones using Smart Money Concepts (SMC) including Order Blocks, Fair Value Gaps, and Breaker Blocks to identify institutional order flow and price imbalances.",
+
+        "core_concepts": {
+            "order_blocks": "Areas where institutions placed large orders, creating supply/demand imbalances",
+            "fair_value_gaps": "Price gaps indicating rapid institutional movement and potential retracement areas",
+            "breaker_blocks": "Former order blocks that were broken and now act as opposite zones",
+            "premium_discount": "Market positioning relative to key supply/demand levels"
+        },
+
+        "order_blocks": {
+            "description": "Institutional demand (bullish) and supply (bearish) zones",
+            "fields": {
+                "top": {
+                    "type": "number",
+                    "description": "Upper boundary of the order block",
+                    "example": 45200.0
+                },
+                "bottom": {
+                    "type": "number",
+                    "description": "Lower boundary of the order block",
+                    "example": 44800.0
+                },
+                "ob_type": {
+                    "type": "string",
+                    "description": "Type of order block",
+                    "possible_values": {
+                        "Bullish OB": "Demand zone where institutions accumulated long positions",
+                        "Bearish OB": "Supply zone where institutions accumulated short positions"
+                    }
+                },
+                "formation_index": {
+                    "type": "integer",
+                    "description": "Candle index where order block was formed",
+                    "example": -25,
+                    "note": "Negative values indicate candles in the past"
+                },
+                "age_hours": {
+                    "type": "integer",
+                    "description": "Hours since order block formation",
+                    "example": 72
+                },
+                "status": {
+                    "type": "enum",
+                    "description": "Current status of the order block",
+                    "possible_values": {
+                        "FRESH": "Untested zone with highest reaction probability",
+                        "TESTED_HOLDING": "Zone tested but held, still valid",
+                        "TESTED_BROKEN": "Zone tested and partially broken",
+                        "MITIGATED": "Zone fully broken and no longer valid"
+                    }
+                },
+                "test_count": {
+                    "type": "integer",
+                    "description": "Number of times zone was tested",
+                    "range": "0-10+",
+                    "interpretation": {
+                        "0": "Fresh zone, highest probability",
+                        "1-2": "Lightly tested, still strong",
+                        "3+": "Heavily tested, weakening"
+                    }
+                },
+                "volume_profile": {
+                    "type": "enum",
+                    "description": "Volume profile during formation",
+                    "possible_values": {
+                        "EXTREME": "Exceptional volume, very strong zone",
+                        "HIGH": "High volume, strong zone",
+                        "MODERATE": "Average volume, moderate strength",
+                        "LOW": "Low volume, weaker zone"
+                    }
+                },
+                "strength": {
+                    "type": "integer",
+                    "description": "Overall strength score",
+                    "range": "1-10",
+                    "factors": ["Volume profile", "Test count", "Age", "Formation quality"],
+                    "interpretation": {
+                        "1-3": "Weak zone, low probability",
+                        "4-6": "Moderate zone, decent probability",
+                        "7-8": "Strong zone, high probability",
+                        "9-10": "Very strong zone, excellent probability"
+                    }
+                },
+                "distance_from_current": {
+                    "type": "string",
+                    "description": "Percentage distance from current price",
+                    "example": "-2.5%"
+                },
+                "zone_height": {
+                    "type": "number",
+                    "description": "Height of zone in price points",
+                    "example": 400.0
+                },
+                "confluence": {
+                    "type": "array[string]",
+                    "description": "List of confluences with other levels",
+                    "examples": ["Previous Daily High", "Fibonacci 61.8%", "Session Resistance"]
+                }
+            }
+        },
+
+        "fair_value_gaps": {
+            "description": "Price gaps indicating institutional movement and potential fill zones",
+            "types": {
+                "bullish_fvg": "Gaps formed during upward movement, potential support",
+                "bearish_fvg": "Gaps formed during downward movement, potential resistance"
+            },
+            "fields": {
+                "top": {
+                    "type": "number",
+                    "description": "Upper boundary of the gap",
+                    "example": 45100.0
+                },
+                "bottom": {
+                    "type": "number",
+                    "description": "Lower boundary of the gap",
+                    "example": 44900.0
+                },
+                "type": {
+                    "type": "string",
+                    "possible_values": {
+                        "Bullish FVG": "Upward gap, potential support area",
+                        "Bearish FVG": "Downward gap, potential resistance area"
+                    }
+                },
+                "status": {
+                    "type": "enum",
+                    "possible_values": {
+                        "FRESH": "Gap not yet filled, highest probability",
+                        "PARTIALLY_FILLED": "Gap partially filled, some reaction expected",
+                        "FULLY_FILLED": "Gap completely filled, no longer valid"
+                    }
+                },
+                "fill_percentage": {
+                    "type": "number",
+                    "description": "Percentage of gap that has been filled",
+                    "range": "0-100",
+                    "interpretation": {
+                        "0-25": "Fresh gap, strong reaction expected",
+                        "25-75": "Partially filled, moderate reaction",
+                        "75-100": "Mostly/fully filled, weak reaction"
+                    }
+                },
+                "gap_size": {
+                    "type": "number",
+                    "description": "Size of the gap in price points",
+                    "example": 200.0
+                }
+            }
+        },
+
+        "breaker_blocks": {
+            "description": "Former order blocks that were broken and now act as opposite zones",
+            "concept": "When a bullish OB is broken, it becomes a bearish breaker (resistance)",
+            "fields": {
+                "level": {
+                    "type": "number",
+                    "description": "Price level of the breaker block",
+                    "example": 44500.0
+                },
+                "type": {
+                    "type": "string",
+                    "possible_values": {
+                        "Bullish Breaker": "Former supply zone now acting as support",
+                        "Bearish Breaker": "Former demand zone now acting as resistance"
+                    }
+                },
+                "original_ob_type": {
+                    "type": "string",
+                    "description": "Original order block type before break",
+                    "example": "Bullish OB"
+                },
+                "break_candle_index": {
+                    "type": "integer",
+                    "description": "Candle index where break occurred",
+                    "example": -8
+                },
+                "status": {
+                    "type": "enum",
+                    "possible_values": {
+                        "ACTIVE": "Breaker recently formed, still relevant",
+                        "INACTIVE": "Breaker old, less relevant"
+                    }
+                },
+                "strength": {
+                    "type": "integer",
+                    "description": "Strength score (reduced from original OB)",
+                    "range": "1-10"
+                }
+            }
+        },
+
+        "zone_analysis": {
+            "description": "Comprehensive analysis of supply/demand zones relative to current price",
+            "fields": {
+                "nearest_demand_zone": {
+                    "type": "object",
+                    "description": "Closest demand zone below current price",
+                    "structure": {
+                        "zone": "Array [bottom, top] price levels",
+                        "type": "Zone type (e.g., 'Bullish OB')",
+                        "strength": "Strength score 1-10",
+                        "distance": "Percentage distance from current price",
+                        "recommendation": "Trading recommendation"
+                    }
+                },
+                "nearest_supply_zone": {
+                    "type": "object",
+                    "description": "Closest supply zone above current price",
+                    "note": "Same structure as nearest_demand_zone"
+                },
+                "strongest_zone": {
+                    "type": "object",
+                    "description": "Highest strength zone regardless of position",
+                    "note": "Key zone for major reactions"
+                },
+                "zone_density": {
+                    "type": "enum",
+                    "description": "Distribution of supply vs demand zones",
+                    "possible_values": {
+                        "DEMAND_HEAVY": "More demand zones, bullish bias",
+                        "SUPPLY_HEAVY": "More supply zones, bearish bias",
+                        "BALANCED": "Equal distribution, neutral bias"
+                    }
+                },
+                "premium_discount": {
+                    "type": "enum",
+                    "description": "Current market positioning",
+                    "possible_values": {
+                        "PREMIUM": "Price in upper range, consider sells",
+                        "EQUILIBRIUM": "Price in middle range, wait for direction",
+                        "DISCOUNT": "Price in lower range, consider buys"
+                    }
+                }
+            }
+        },
+
+        "confluence_matrix": {
+            "description": "High-probability zones with multiple confluences",
+            "purpose": "Identify zones with highest reaction probability",
+            "fields": {
+                "high_probability_zones": {
+                    "type": "array",
+                    "description": "Zones with multiple confluences",
+                    "max_items": 8,
+                    "sorted_by": "Score (highest first)",
+                    "item_fields": {
+                        "zone": {
+                            "type": "array[number]",
+                            "description": "Zone boundaries [bottom, top]",
+                            "example": [44800, 45200]
+                        },
+                        "confluences": {
+                            "type": "array[string]",
+                            "description": "List of confluences at this zone",
+                            "examples": ["Bullish OB", "Untested Zone", "High Volume", "FVG Overlap"]
+                        },
+                        "score": {
+                            "type": "number",
+                            "description": "Combined confluence score",
+                            "range": "0-10",
+                            "interpretation": {
+                                "8-10": "Exceptional confluence, very high probability",
+                                "6-8": "Strong confluence, high probability",
+                                "4-6": "Moderate confluence, decent probability",
+                                "0-4": "Weak confluence, low probability"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+
+        "supply_demand_metrics": {
+            "description": "Quantitative metrics and statistics",
+            "fields": {
+                "total_demand_zones": {
+                    "type": "integer",
+                    "description": "Number of active demand zones",
+                    "example": 4
+                },
+                "total_supply_zones": {
+                    "type": "integer",
+                    "description": "Number of active supply zones",
+                    "example": 3
+                },
+                "fresh_zones_count": {
+                    "type": "integer",
+                    "description": "Number of fresh (untested) zones",
+                    "example": 2,
+                    "note": "Higher count indicates more opportunities"
+                },
+                "mitigated_today": {
+                    "type": "integer",
+                    "description": "Zones broken in last 24 hours",
+                    "example": 1,
+                    "interpretation": "Higher values indicate active market"
+                },
+                "zone_imbalance": {
+                    "type": "enum",
+                    "description": "Overall zone distribution",
+                    "same_as": "zone_analysis.zone_density"
+                },
+                "avg_zone_height": {
+                    "type": "number",
+                    "description": "Average height of zones in price points",
+                    "example": 350.0
+                },
+                "strongest_zone_distance": {
+                    "type": "string",
+                    "description": "Distance to strongest zone",
+                    "example": "+1.8%"
+                }
+            }
+        },
+
+        "trading_interpretation": {
+            "entry_signals": [
+                "Price approaching FRESH order block",
+                "PREMIUM/DISCOUNT positioning for direction",
+                "High confluence zones (score >7)",
+                "Fresh FVGs with <25% fill"
+            ],
+            "exit_signals": [
+                "Order block MITIGATED",
+                "FVG 100% filled",
+                "Breaker block broken again",
+                "Multiple zone rejections"
+            ],
+            "risk_management": [
+                "Place stops beyond zone boundaries",
+                "Reduce size at heavily tested zones",
+                "Avoid trading against strongest zones",
+                "Monitor zone_imbalance for bias"
+            ],
+            "confluence_priorities": [
+                "1. Fresh zones (highest priority)",
+                "2. High volume zones",
+                "3. Multiple timeframe confluences",
+                "4. Untested breaker blocks",
+                "5. Premium/discount positioning"
+            ]
+        },
+
+        "usage_examples": {
+            "bullish_setup": {
+                "description": "Example bullish supply/demand setup",
+                "indicators": [
+                    "premium_discount: DISCOUNT",
+                    "nearest_demand_zone with strength 8+",
+                    "zone_density: DEMAND_HEAVY",
+                    "Fresh Bullish OB below price"
+                ]
+            },
+            "bearish_setup": {
+                "description": "Example bearish supply/demand setup",
+                "indicators": [
+                    "premium_discount: PREMIUM",
+                    "nearest_supply_zone with strength 8+",
+                    "zone_density: SUPPLY_HEAVY",
+                    "Fresh Bearish OB above price"
+                ]
+            }
+        }
+    }

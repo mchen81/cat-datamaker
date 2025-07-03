@@ -575,3 +575,342 @@ async def get_market_structure(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Market structure analysis failed: {str(e)}")
+
+
+@router.get("/api/market-structure/doc",
+            summary="Market Structure API Documentation",
+            description="Get comprehensive documentation for the Market Structure API response format")
+async def get_market_structure_documentation():
+    """
+    Get detailed documentation for the Market Structure API response format.
+    
+    This endpoint explains all fields, enums, and data structures returned by the 
+    /api/market-structure/{symbol}/{timeframe} endpoint.
+    """
+    return {
+        "api_endpoint": "/api/market-structure/{symbol}/{timeframe}",
+        "description": "Analyzes market structure using Smart Money Concepts (SMC) methodology to identify trend direction, swing points, and Break of Structure (BOS) / Change of Character (CHoCH) events.",
+
+        "response_structure": {
+            "symbol": {
+                "type": "string",
+                "description": "Trading pair symbol (e.g., BTCUSDT)",
+                "example": "BTCUSDT"
+            },
+            "timeframe": {
+                "type": "string",
+                "description": "Analysis timeframe",
+                "example": "4h",
+                "possible_values": ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d",
+                                    "1w", "1M"]
+            },
+            "timestamp": {
+                "type": "string",
+                "description": "ISO 8601 timestamp of analysis",
+                "example": "2024-01-01T12:00:00Z"
+            },
+            "current_price": {
+                "type": "number",
+                "description": "Current market price",
+                "example": 45000.50
+            }
+        },
+
+        "market_structure": {
+            "description": "Core market structure analysis data",
+            "fields": {
+                "trend": {
+                    "type": "enum",
+                    "description": "Overall market trend direction based on BOS/CHoCH analysis",
+                    "possible_values": {
+                        "BULLISH": "Upward trending market with bullish BOS events",
+                        "BEARISH": "Downward trending market with bearish BOS events",
+                        "NEUTRAL": "No clear trend direction, consolidating market"
+                    }
+                },
+                "trend_strength": {
+                    "type": "integer",
+                    "description": "Trend strength score from 1-10 based on recent BOS/CHoCH events",
+                    "range": "1-10",
+                    "interpretation": {
+                        "1-3": "Weak trend, potential reversal or consolidation",
+                        "4-6": "Moderate trend strength",
+                        "7-10": "Strong trend with high probability of continuation"
+                    }
+                },
+                "structure_clarity": {
+                    "type": "integer",
+                    "description": "How clear and well-defined the market structure is",
+                    "range": "1-10",
+                    "interpretation": {
+                        "1-3": "Unclear structure, avoid trading",
+                        "4-6": "Moderate clarity, trade with caution",
+                        "7-10": "Very clear structure, high confidence trades"
+                    }
+                },
+                "last_update": {
+                    "type": "string",
+                    "description": "Timestamp of last significant structure change",
+                    "example": "2024-01-01T10:30:00Z"
+                },
+                "retracement": {
+                    "description": "Current retracement analysis",
+                    "fields": {
+                        "direction": {
+                            "type": "string",
+                            "description": "Type of current price movement",
+                            "possible_values": {
+                                "Pullback": "Price retracing against main trend",
+                                "Extension": "Price extending in direction of main trend"
+                            }
+                        },
+                        "current_percent": {
+                            "type": "number",
+                            "description": "Current retracement percentage from swing point",
+                            "example": 38.2
+                        },
+                        "deepest_percent": {
+                            "type": "number",
+                            "description": "Deepest retracement percentage reached",
+                            "example": 50.0
+                        }
+                    }
+                }
+            }
+        },
+
+        "recent_bos_choch": {
+            "description": "Array of recent Break of Structure and Change of Character events",
+            "note": "Returns up to 10 most recent events, ordered by recency",
+            "fields": {
+                "type": {
+                    "type": "string",
+                    "description": "Type of structural event",
+                    "possible_values": {
+                        "Bullish BOS": "Break above previous high, continuation of uptrend",
+                        "Bearish BOS": "Break below previous low, continuation of downtrend",
+                        "Bullish CHoCH": "Break above previous high after downtrend, trend reversal to bullish",
+                        "Bearish CHoCH": "Break below previous low after uptrend, trend reversal to bearish"
+                    }
+                },
+                "level": {
+                    "type": "number",
+                    "description": "Price level where the BOS/CHoCH occurred",
+                    "example": 44500.0
+                },
+                "distance_from_current": {
+                    "type": "string",
+                    "description": "Percentage distance from current price",
+                    "example": "+2.25%",
+                    "note": "Positive values are above current price, negative below"
+                },
+                "candle_index": {
+                    "type": "integer",
+                    "description": "Relative candle position (negative values indicate past candles)",
+                    "example": -15,
+                    "note": "-1 = previous candle, -15 = 15 candles ago"
+                },
+                "time_ago_hours": {
+                    "type": "integer",
+                    "description": "Hours since the event occurred",
+                    "example": 60
+                },
+                "broke_level": {
+                    "type": "number",
+                    "description": "The swing high/low level that was broken",
+                    "example": 44200.0
+                }
+            }
+        },
+
+        "swing_points": {
+            "description": "Recent swing highs and lows identified in the market structure",
+            "fields": {
+                "recent_highs": {
+                    "type": "array",
+                    "description": "Up to 5 most recent swing highs",
+                    "item_fields": {
+                        "level": {
+                            "type": "number",
+                            "description": "Price level of swing high",
+                            "example": 45200.0
+                        },
+                        "distance_from_current": {
+                            "type": "string",
+                            "description": "Percentage distance from current price",
+                            "example": "+1.5%"
+                        },
+                        "candle_index": {
+                            "type": "integer",
+                            "description": "Relative candle position",
+                            "example": -8
+                        },
+                        "age_hours": {
+                            "type": "integer",
+                            "description": "Hours since swing point was formed",
+                            "example": 32
+                        },
+                        "swing_type": {
+                            "type": "enum",
+                            "description": "Type of swing point relative to previous swings",
+                            "possible_values": {
+                                "HH": "Higher High - new peak above previous high",
+                                "LH": "Lower High - peak below previous high"
+                            }
+                        },
+                        "status": {
+                            "type": "enum",
+                            "description": "Current status of the swing point",
+                            "possible_values": {
+                                "UNBROKEN_RESISTANCE": "Level acting as resistance, not yet broken",
+                                "BROKEN_NOW_SUPPORT": "Previously broken resistance now acting as support",
+                                "KEY_RESISTANCE": "Important resistance level"
+                            }
+                        }
+                    }
+                },
+                "recent_lows": {
+                    "type": "array",
+                    "description": "Up to 5 most recent swing lows",
+                    "item_fields": {
+                        "swing_type": {
+                            "possible_values": {
+                                "HL": "Higher Low - trough above previous low",
+                                "LL": "Lower Low - trough below previous low"
+                            }
+                        },
+                        "status": {
+                            "possible_values": {
+                                "PROTECTED_LOW": "Low level holding as support",
+                                "KEY_SUPPORT": "Important support level"
+                            }
+                        }
+                    },
+                    "note": "Other fields same as recent_highs"
+                }
+            }
+        },
+
+        "structure_analysis": {
+            "description": "Comprehensive analysis and interpretation of market structure",
+            "fields": {
+                "swing_pattern": {
+                    "type": "string",
+                    "description": "Current swing pattern being formed",
+                    "possible_values": {
+                        "HH-HL": "Higher Highs and Higher Lows (bullish structure)",
+                        "LH-LL": "Lower Highs and Lower Lows (bearish structure)",
+                        "HH": "Making higher highs only",
+                        "LH": "Making lower highs only",
+                        "NEUTRAL": "No clear pattern"
+                    }
+                },
+                "last_significant_move": {
+                    "type": "string",
+                    "description": "Description of the most recent significant structural move",
+                    "example": "Bullish BOS at 44500"
+                },
+                "structure_intact": {
+                    "type": "boolean",
+                    "description": "Whether the current trend structure remains valid",
+                    "interpretation": {
+                        "true": "Structure is intact, trend likely to continue",
+                        "false": "Structure compromised, expect consolidation or reversal"
+                    }
+                },
+                "invalidation_level": {
+                    "type": "number",
+                    "description": "Price level that would invalidate current structure",
+                    "example": 43800.0,
+                    "note": "Usually the most recent significant swing low/high"
+                },
+                "confirmation_level": {
+                    "type": "number",
+                    "description": "Price level that would confirm structure continuation",
+                    "example": 45500.0,
+                    "note": "Usually the next resistance/support level to break"
+                },
+                "key_message": {
+                    "type": "string",
+                    "description": "Summary message with key insights and trading bias",
+                    "example": "Bullish structure maintained. Price holding above recent support at 43800."
+                }
+            }
+        },
+
+        "smc_metrics": {
+            "description": "Smart Money Concepts scoring metrics",
+            "fields": {
+                "structure_score": {
+                    "type": "number",
+                    "description": "Overall structure quality score",
+                    "range": "0-10",
+                    "interpretation": {
+                        "0-3": "Poor structure, avoid trading",
+                        "4-6": "Average structure, trade with caution",
+                        "7-10": "Excellent structure, high probability setups"
+                    }
+                },
+                "momentum_score": {
+                    "type": "number",
+                    "description": "Momentum strength score based on recent price action",
+                    "range": "0-10"
+                },
+                "clarity_score": {
+                    "type": "number",
+                    "description": "How clear and readable the market structure is",
+                    "range": "0-10"
+                },
+                "overall_bias": {
+                    "type": "enum",
+                    "description": "Recommended overall trading bias",
+                    "possible_values": {
+                        "BULLISH": "Look for long opportunities",
+                        "BEARISH": "Look for short opportunities",
+                        "NEUTRAL": "No clear bias, avoid trading or wait"
+                    }
+                }
+            }
+        },
+
+        "usage_examples": {
+            "bullish_scenario": {
+                "description": "Example of bullish market structure",
+                "indicators": [
+                    "trend: BULLISH",
+                    "trend_strength: 8",
+                    "structure_clarity: 7",
+                    "Recent Bullish BOS events",
+                    "swing_pattern: HH-HL",
+                    "structure_intact: true"
+                ]
+            },
+            "bearish_scenario": {
+                "description": "Example of bearish market structure",
+                "indicators": [
+                    "trend: BEARISH",
+                    "trend_strength: 7",
+                    "Recent Bearish CHoCH event",
+                    "swing_pattern: LH-LL",
+                    "overall_bias: BEARISH"
+                ]
+            }
+        },
+
+        "trading_interpretation": {
+            "how_to_use": [
+                "1. Check overall_bias for directional bias",
+                "2. Verify structure_intact is true before trading",
+                "3. Use invalidation_level for stop loss placement",
+                "4. Target confirmation_level for take profit",
+                "5. Higher trend_strength and structure_clarity indicate higher probability trades",
+                "6. BOS events suggest trend continuation, CHoCH events suggest reversal"
+            ],
+            "risk_management": [
+                "Always place stops beyond invalidation_level",
+                "Avoid trading when structure_clarity < 5",
+                "Wait for structure confirmation after CHoCH events",
+                "Use position sizing based on structure_score"
+            ]
+        }
+    }
