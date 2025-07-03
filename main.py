@@ -6,6 +6,7 @@ from api_market_structure import router as market_structure_router
 from api_mtf_structure import router as mtf_structure_router
 from api_supply_demand_zones import router as supply_demand_zones_router
 from api_technical_analysis import router as technical_analysis_router
+from api_trade_signal import router as trade_signal_router
 
 app = FastAPI(
     title="Cryptocurrency Technical Analysis API",
@@ -27,6 +28,7 @@ app.include_router(supply_demand_zones_router)
 app.include_router(killzone_sessions_router)
 app.include_router(mtf_structure_router)
 app.include_router(technical_analysis_router)
+app.include_router(trade_signal_router)
 
 
 @app.get("/",
@@ -47,6 +49,7 @@ async def root():
             "/api/supply-demand-zones/{symbol}/{timeframe}": "Supply demand zones analysis endpoint",
             "/api/killzone-sessions/{symbol}/{timeframe}": "Killzone sessions analysis endpoint",
             "/api/mtf-structure/{symbol}": "Multi-timeframe structure analysis endpoint",
-            "/api/technical-indicators/{symbol}/{timeframe}": "Technical indicators analysis endpoint"
+            "/api/technical-indicators/{symbol}/{timeframe}": "Technical indicators analysis endpoint",
+            "/api/trade-signal/{symbol}/{timeframe}": "Comprehensive trade signal generation endpoint"
         }
     }
