@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from api_liquidity_zones import router as liquidity_zones_router
 from api_market_structure import router as market_structure_router
 
 app = FastAPI(
@@ -17,6 +18,7 @@ app = FastAPI(
 
 # Include routers
 app.include_router(market_structure_router)
+app.include_router(liquidity_zones_router)
 
 
 @app.get("/",
