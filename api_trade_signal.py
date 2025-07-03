@@ -653,7 +653,7 @@ class TradeSignalAnalyzer:
                 invalidation_level=0.0
             )
 
-    def generate_trade_signal(self, symbol: str, timeframe: str,
+    async def generate_trade_signal(self, symbol: str, timeframe: str,
                               as_of_datetime: Optional[str] = None) -> Dict[str, Any]:
         """Generate comprehensive trade signal"""
         try:
@@ -667,13 +667,12 @@ class TradeSignalAnalyzer:
                 end_time_ms = int(as_of_dt.timestamp() * 1000)
 
             # Get klines data
-            import asyncio
-            klines_data = asyncio.run(binance_fetcher.get_klines(
+            klines_data = await binance_fetcher.get_klines(
                 symbol=symbol,
                 interval=timeframe,
                 limit=200,
                 end_time=end_time_ms
-            ))
+            )
 
             formatted_data = binance_fetcher.format_klines_data(klines_data)
             df = self.prepare_dataframe(formatted_data)
@@ -791,42 +790,8 @@ class TradeSignalAnalyzer:
 
         except Exception as e:
             print(f"Error generating trade signal: {e}")
-            # Return default signal
-            return {
-                "current_price": 50000.0,
-                "signal_direction": SignalDirection.NEUTRAL,
-                "signal_strength": SignalStrength.WEAK,
-                "confidence_level": ConfidenceLevel.LOW,
-                "recommended_action": TradingAction.WAIT,
-                "technical_signal": TechnicalSignal(
-                    rsi_signal=0.0, macd_signal=0.0, ma_signal=0.0,
-                    volume_signal=0.0, volatility_signal=0.0, combined_score=0.0
-                ),
-                "smc_signal": SMCSignal(
-                    market_structure_signal=0.0, liquidity_signal=0.0, supply_demand_signal=0.0,
-                    order_block_signal=0.0, fair_value_gap_signal=0.0, combined_score=0.0
-                ),
-                "signal_components": [],
-                "risk_metrics": RiskMetrics(
-                    risk_level=RiskLevel.MEDIUM, volatility_risk=0.4, liquidity_risk=0.3,
-                    market_risk=0.3, suggested_position_size=0.01, max_drawdown_estimate=0.1
-                ),
-                "entry_exit_levels": EntryExitLevels(
-                    entry_price=50000.0, stop_loss=49000.0, take_profit_1=51000.0,
-                    take_profit_2=52000.0, take_profit_3=53000.0, risk_reward_ratio=1.0
-                ),
-                "market_context": MarketContext(
-                    current_condition=MarketCondition.RANGING, trend_direction="NEUTRAL",
-                    trend_strength=0.5, support_level=49000.0, resistance_level=51000.0
-                ),
-                "signal_validation": SignalValidation(
-                    signal_confirmed=False, confirmation_factors=["Analysis pending"],
-                    warning_factors=["Unable to generate signal"], time_horizon="Unknown",
-                    invalidation_level=0.0
-                ),
-                "key_message": "Signal analysis in progress",
-                "execution_notes": "Wait for system to analyze market conditions"
-            }
+            # Re-raise the exception to be handled by the API endpoint
+            raise Exception(f"Failed to generate trade signal for {symbol}: {str(e)}")
 
 
 @router.get("/api/trade-signal/{symbol}/{timeframe}",
@@ -893,7 +858,7 @@ async def get_trade_signal(
             processed_symbol = f"{processed_symbol}USDT"
 
         # Generate trade signal
-        signal_result = analyzer.generate_trade_signal(processed_symbol, timeframe, as_of_datetime)
+        signal_result = await analyzer.generate_trade_signal(processed_symbol, timeframe, as_of_datetime)
 
         # Create response
         return TradeSignalResponse(
