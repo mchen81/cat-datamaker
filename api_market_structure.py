@@ -543,10 +543,9 @@ async def get_market_structure(
                 # Convert to Unix timestamp in milliseconds
                 end_time_ms = int(as_of_dt.timestamp() * 1000)
             except ValueError:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Invalid datetime format. Use ISO 8601 format (e.g., 2024-01-01T00:00:00Z)"
-                )
+                # Log the parsing error and use current timestamp
+                print(f"Warning: Failed to parse as_of_datetime '{as_of_datetime}'. Using current timestamp instead.")
+                end_time_ms = None  # Will default to current time in get_klines
 
         # Fetch data from Binance
         klines_data = await binance_fetcher.get_klines(
@@ -564,7 +563,7 @@ async def get_market_structure(
         return MarketStructureResponse(
             symbol=processed_symbol,
             timeframe=timeframe,
-            timestamp=datetime.now(timezone.utc).isoformat() if as_of_datetime is None else as_of_datetime,
+            timestamp=datetime.now(timezone.utc).isoformat() if end_time_ms is None else as_of_datetime,
             current_price=analysis_result["current_price"],
             market_structure=analysis_result["market_structure"],
             recent_bos_choch=analysis_result["recent_bos_choch"],

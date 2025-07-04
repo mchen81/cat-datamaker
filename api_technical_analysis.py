@@ -1678,11 +1678,18 @@ class TechnicalIndicatorAnalyzer:
         binance_fetcher = BinanceDataFetcher()
 
         try:
-            # Parse end time if provided
             end_time_ms = None
             if as_of_datetime:
-                as_of_dt = datetime.fromisoformat(as_of_datetime.replace('Z', '+00:00'))
-                end_time_ms = int(as_of_dt.timestamp() * 1000)
+                try:
+                    # Parse ISO 8601 datetime string
+                    as_of_dt = datetime.fromisoformat(as_of_datetime.replace('Z', '+00:00'))
+                    # Convert to Unix timestamp in milliseconds
+                    end_time_ms = int(as_of_dt.timestamp() * 1000)
+                except ValueError:
+                    # Log the parsing error and use current timestamp
+                    print(
+                        f"Warning: Failed to parse as_of_datetime '{as_of_datetime}'. Using current timestamp instead.")
+                    end_time_ms = None
 
             # Fetch klines data
             import asyncio
@@ -1876,7 +1883,8 @@ async def get_technical_indicators(
         return TechnicalIndicatorsResponse(
             symbol=processed_symbol,
             timeframe=timeframe,
-            timestamp=datetime.now(timezone.utc).isoformat() if as_of_datetime is None else as_of_datetime,
+            timestamp=datetime.now(
+                timezone.utc).isoformat() if as_of_datetime is None or as_of_datetime != "null" else as_of_datetime,
             current_price=analysis_result["current_price"],
             momentum_indicators=analysis_result["momentum_indicators"],
             volume_analysis=analysis_result["volume_analysis"],

@@ -663,8 +663,16 @@ class TradeSignalAnalyzer:
             # Parse end time if provided
             end_time_ms = None
             if as_of_datetime:
-                as_of_dt = datetime.fromisoformat(as_of_datetime.replace('Z', '+00:00'))
-                end_time_ms = int(as_of_dt.timestamp() * 1000)
+                try:
+                    # Parse ISO 8601 datetime string
+                    as_of_dt = datetime.fromisoformat(as_of_datetime.replace('Z', '+00:00'))
+                    # Convert to Unix timestamp in milliseconds
+                    end_time_ms = int(as_of_dt.timestamp() * 1000)
+                except ValueError:
+                    # Log the parsing error and use current timestamp
+                    print(
+                        f"Warning: Failed to parse as_of_datetime '{as_of_datetime}'. Using current timestamp instead.")
+                    end_time_ms = None
 
             # Get klines data
             klines_data = await binance_fetcher.get_klines(
