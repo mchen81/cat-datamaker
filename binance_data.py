@@ -11,15 +11,17 @@ class BinanceDataFetcher:
     """
 
     def __init__(self):
-        self.base_url = "https://api.binance.com/api/v3"
+        self.spot_base_url = "https://api.binance.com/api/v3"
+        self.futures_base_url = "https://fapi.binance.com/fapi/v1"
 
         # Create SSL context for secure connections
         self.ssl_context = ssl.create_default_context(cafile=certifi.where())
         self.ssl_context.check_hostname = False
         self.ssl_context.verify_mode = ssl.CERT_NONE
 
-    async def get_klines(self, symbol: str = "BTCUSDT", interval: str = "1h", limit: int = 100, end_time: int = None) -> \
-    List[List[str]]:
+    async def get_klines(self, symbol: str = "BTCUSDT", interval: str = "1h", limit: int = 100, end_time: int = None,
+                         is_spot: bool = False) -> \
+            List[List[str]]:
         """
         Fetch kline/candlestick data from Binance
         
@@ -28,11 +30,13 @@ class BinanceDataFetcher:
             interval: Kline interval (1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M)
             limit: Number of klines to fetch (max 1000)
             end_time: End time in Unix timestamp milliseconds (optional)
+            is_spot: Whether to use spot API (True) or futures API (False, default)
             
         Returns:
             List of kline data
         """
-        url = f"{self.base_url}/klines"
+        base_url = self.spot_base_url if is_spot else self.futures_base_url
+        url = f"{base_url}/klines"
         params = {
             "symbol": symbol,
             "interval": interval,
