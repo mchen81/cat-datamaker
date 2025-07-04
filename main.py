@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from api_get_smc_all import router as smc_all_router
 from api_killzone_sessions import router as killzone_sessions_router
 from api_liquidity_zones import router as liquidity_zones_router
 from api_market_structure import router as market_structure_router
@@ -22,6 +23,7 @@ app = FastAPI(
 )
 
 # Include routers
+app.include_router(smc_all_router)  # Add comprehensive SMC endpoint first
 app.include_router(market_structure_router)
 app.include_router(liquidity_zones_router)
 app.include_router(supply_demand_zones_router)
@@ -44,6 +46,7 @@ async def root():
         "endpoints": {
             "/docs": "Swagger UI documentation",
             "/redoc": "ReDoc documentation",
+            "/api/smc-all/{symbol}/{timeframe}": "Comprehensive SMC analysis (all modules combined)",
             "/api/market-structure/{symbol}/{timeframe}": "Market structure analysis endpoint",
             "/api/liquidity-zones/{symbol}/{timeframe}": "Liquidity zones analysis endpoint",
             "/api/supply-demand-zones/{symbol}/{timeframe}": "Supply demand zones analysis endpoint",
